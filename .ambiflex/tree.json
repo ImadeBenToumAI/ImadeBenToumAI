@@ -89,9 +89,12 @@
       "summary": "One track = one branch or worktree; a node shows its commits and PR; \"Validate\" on a node with a PR proposes the merge (never merges alone).",
       "estimate": "2d",
       "id": "n6",
-      "status": "proposed",
+      "status": "done",
       "createdAt": "2026-10-18T21:14:01.387Z",
-      "updatedAt": "2026-10-18T22:01:10.577Z"
+      "updatedAt": "2026-10-18T22:06:34.744Z",
+      "detail": "## Nodes ↔ branches ↔ PR (Phase 4)\n\n- An agent spawned with `#<id>` gets that node its own branch `ambiflex/<id>-<slug>` in a worktree under `.ambiflex/worktrees/<id>` (git-ignored); the agent is told to work and commit there, never on the main checkout.\n- The panel shows, per node with a branch, its commits beyond `main` and its PR when `gh` can report one; the Git tab refreshes them after every git command.\n- \"Validate\" on a node with a branch asks Claude to propose the merge of that branch (or its PR) and never to merge without explicit confirmation.\n\nJudge: `claude plugin test` 29/29 and a real-repo run of the worktree commands.",
+      "verification": "claude plugin test: 29 pass (an agent spawned for #n1 gets `git worktree add .ambiflex/worktrees/n1 -b ambiflex/n1-perf-track`, its prompt names the worktree, the node records the branch and the panel shows it); the same git commands verified on a real temporary repository (worktree, commit, `git log main..branch` lists it)",
+      "finishedAt": "2026-10-18T22:06:34.744Z"
     },
     {
       "title": "Tree search",
@@ -219,16 +222,16 @@
   ],
   "auto": {
     "on": true,
-    "turns": 7,
+    "turns": 8,
     "maxTurns": 40,
     "startedAt": "2026-10-18T21:55:08.518Z"
   },
   "cost": {
-    "spentUsd": 31.05,
-    "sessionUsd": 31.05,
+    "spentUsd": 33.58,
+    "sessionUsd": 33.58,
     "ratePerHour": 30,
     "assumedRate": true,
-    "estimateUsd": 496.8,
+    "estimateUsd": 16080,
     "model": "claude-fable-5-1",
     "rateLimits": [
       {

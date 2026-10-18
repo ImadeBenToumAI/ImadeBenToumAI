@@ -58,7 +58,7 @@ See the table above. Judge: `claude plugin validate` and `claude plugin test` gr
 3. Calibration: the median ratio actual / estimated over history (already computed) applied to new estimates by the method ("your estimates run ×1.6 optimistic").
 4. **Judge:** tests on a known graph (critical path and E computed by hand). The calibration factor is recovered from a synthetic history.
 
-### Phase 4: reasoning ↔ code (n6): 1 / 2 / 4 d
+### Phase 4: reasoning ↔ code (n6): 1 / 2 / 4 d. Done in v0.3 (worktree branch per agent node, commits and PR in the panel, Validate proposes the merge).
 1. "Spawn agent" creates a branch `ambiflex/<id>-<title>` (or a worktree) and the agent works there.
 2. The Git tab colours branches by node. A node shows its commits and its PR, through the GitHub tool or `gh` when available.
 3. "Validate" on a node with a PR: Claude proposes the merge; it merges only with your confirmation.

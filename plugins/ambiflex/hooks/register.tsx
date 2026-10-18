@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register, ResolveInput } from 'claude-code'
 
-import type { Cost, Status, Tab, Tree } from '../types'
+import type { BranchInfo, Cost, Status, Tab, Tree } from '../types'
 import { LOG_FILE, eventsFromSnapshot, parseLog, replay, serialize } from './log'
 import type { Event } from './log'
 import {
@@ -24,6 +24,7 @@ const expanded = atom({ plugin: 'ambiflex', key: 'expanded' } as const, false)
 const tab = atom({ plugin: 'ambiflex', key: 'tab' } as const, 'tree' as Tab)
 const git = atom({ plugin: 'ambiflex', key: 'git' } as const, '')
 const agents = atom({ plugin: 'ambiflex', key: 'agents' } as const, [] as string[])
+const branches = atom({ plugin: 'ambiflex', key: 'branches' } as const, {} as Record<string, BranchInfo>)
 
 // The system prompt carries only the method. The tree's content is read through tree_get, as data.
 const METHOD = `# Ambiflex: ambitious reasoning tree
@@ -31,7 +32,7 @@ For every task, apply Felix Rieseberg's be-ambitious method and record your reas
 1. New task: tree_set_goal (the goal behind the goal), then tree_upsert one node per track: at least one Altitude (the durable outcome), one Depth (what the best expert would do, with which tools and which external judge), one Range (which other disciplines; verbs, not nouns). Give each an estimate ("2h", "3d", "1w", or three-point "1h/2h/4h") and a summary. When the tree reports a calibration factor, multiply your new estimates by it.
 2. Concrete steps are lens=step nodes whose parents are the tracks they serve. Tracks may converge: a node may have several parents.
 3. Update status as you go: exploring when you start; done only with a verification (the test, command or metric that proved it): without one the node is kept at "needs review". Never set validated yourself: only the user validates.
-4. When you spawn a subagent for a node, put #<id> in its description ("Explore the perf track #n4"): the node then shows as explored by that agent.
+4. When you spawn a subagent for a node, put #<id> in its description ("Explore the perf track #n4"): the plugin gives the node its own branch in a worktree under .ambiflex/worktrees/<id>, tells the agent to work there, and shows the node as explored by that agent. Validating such a node proposes the merge of its branch; never merge without the user's confirmation.
 5. Messages starting with [tree] come from the user's panel or page: do what they ask and update the tree.
 6. If a Git branch serves a node, fill in branch.
 7. Auto mode: when the tree says auto mode is ON, you are executing the plan without asking for approval. Work on the node the prompt names, verify it with an external judge, set done with its verification, and stop the turn. The plugin starts the next node by itself. Ask the user only when a node cannot be completed without a decision that is theirs (money, access, publishing to the outside).
@@ -134,6 +135,39 @@ async function refreshGit($: $) {
     ? `${branches?.stdout ?? ''}\n${graph.stdout}`
     : 'No Git repository in this folder.'
   await update($, git, () => text)
+  await refreshBranches($).catch(() => undefined)
+}
+
+/** For every node that names a branch: its commits beyond main, and its PR when `gh` can tell. */
+async function refreshBranches($: $) {
+  const t = await read($, tree)
+  const info: Record<string, BranchInfo> = {}
+  for (const n of t.nodes.filter(n => n.branch)) {
+    const log = await $.process.run(['git', 'log', `main..${n.branch}`, '--oneline', '-n', '8']).catch(() => undefined)
+    const commits = log && log.exitCode === 0 ? log.stdout.split('\n').filter(Boolean) : []
+    const pr = await $.process.run(['gh', 'pr', 'list', '--head', n.branch!, '--json', 'url', '--jq', '.[0].url'], { timeoutMs: 10000 }).catch(() => undefined)
+    info[n.id] = { commits, pr: pr && pr.exitCode === 0 && pr.stdout.trim() ? pr.stdout.trim() : undefined }
+  }
+  await update($, branches, () => info)
+}
+
+const slug = (text: string) => text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 24)
+
+/** Gives a node its own branch in a worktree under .ambiflex/worktrees, so an agent works there and never on the main checkout. */
+async function branchFor($: $, id: string): Promise<{ branch: string; path: string } | undefined> {
+  const t = await read($, tree)
+  const node = t.nodes.find(n => n.id === id)
+  if (!node) return undefined
+  const branch = node.branch ?? `ambiflex/${id}-${slug(node.title) || 'work'}`
+  const path = `${root}.ambiflex/worktrees/${id}`
+  if (await $.fs.exists(path).catch(() => false)) return { branch, path }
+  const exists = await $.process.run(['git', 'rev-parse', '--verify', '--quiet', branch]).catch(() => undefined)
+  const args = exists && exists.exitCode === 0 ? ['git', 'worktree', 'add', path, branch] : ['git', 'worktree', 'add', path, '-b', branch]
+  const made = await $.process.run(args).catch(() => undefined)
+  if (!made || made.exitCode !== 0) return undefined
+  await $.fs.write(`${root}.ambiflex/.gitignore`, 'worktrees/\n').catch(() => undefined)
+  if (!node.branch) await commit($, { kind: 'upsert', input: { id, branch } })
+  return { branch, path }
 }
 
 async function nowIso($: $) {
@@ -233,6 +267,7 @@ async function drawTree($: $, e: ResolveInput) {
   const isExpanded = await read($, expanded)
   const activeTab = await read($, tab)
   const running = await read($, agents)
+  const branchInfo = await read($, branches)
   const p = progress(t)
   const e2e = eta(t)
   const cal = calibration(t)
@@ -321,9 +356,16 @@ async function drawTree($: $, e: ResolveInput) {
         {node.estimate ? ` · estimate ${node.estimate}` : ''}
         {node.verification ? ` · verified by ${node.verification}` : ''}
         {node.branch ? ` · branch ${node.branch}` : ''}
+        {node.branch && branchInfo[node.id]?.pr ? ` · PR ${branchInfo[node.id]!.pr}` : ''}
         {node.parents.length ? ` · from ${node.parents.join(', ')}` : ''}
       </Text>
       {node.summary && <Text>{node.summary}</Text>}
+      {node.branch && (branchInfo[node.id]?.commits.length ?? 0) > 0 && (
+        <Box flexDirection="column">
+          <Text dimColor>{`Commits on ${node.branch}:`}</Text>
+          {branchInfo[node.id]!.commits.map(c => <Text dimColor key={`c-${c.slice(0, 7)}`}>{`  ${c}`}</Text>)}
+        </Box>
+      )}
       {isExpanded && node.detail && <Markdown text={node.detail} />}
       <Box flexDirection="row" flexWrap="wrap" gap={1}>
         <Button key="act-detail" onPress={() => update($, expanded, x => !x)}>
@@ -331,7 +373,9 @@ async function drawTree($: $, e: ResolveInput) {
         </Button>
         <Button key="act-validate" variant="primary" onPress={async () => {
           await setStatus(node.id, 'validated')
-          await steer(`I validated ${node.id} "${node.title}". Fold its results into the main branch of the tree (and of the code where relevant), then move on.`)
+          await steer(node.branch
+            ? `I validated ${node.id} "${node.title}". Propose merging branch ${node.branch} into main${branchInfo[node.id]?.pr ? ` (PR ${branchInfo[node.id]!.pr})` : ' (open a PR for it)'}; do not merge without my explicit confirmation. Then move on.`
+            : `I validated ${node.id} "${node.title}". Fold its results into the main branch of the tree (and of the code where relevant), then move on.`)
         }}>Validate</Button>
         <Button key="act-deeper" onPress={() => steer(`Go deeper on ${node.id} "${node.title}" (Depth): expert methods and tools, raw data, external judge. Create the sub-nodes.`)}>
           Deeper
@@ -582,8 +626,13 @@ export const register: Register = (on, opts) => {
     } catch {
       // Tracking must never block the agent.
     }
+    let input = e
+    if (id) {
+      const wt = await branchFor($, id).catch(() => undefined)
+      if (wt) input = { ...e, prompt: `${e.prompt}\n\nWork in the Git worktree at ${wt.path} (branch ${wt.branch}): make your changes and commits there, never on the main checkout. Put the branch name in your report.` }
+    }
     try {
-      return await next(e)
+      return await next(input)
     } finally {
       await trackAgentEnd($, key, id).catch(() => undefined)
     }

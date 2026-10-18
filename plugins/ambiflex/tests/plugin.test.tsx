@@ -2,12 +2,15 @@ import { expect, mock, test } from 'claude-code/testing'
 
 const flush = () => new Promise(r => (globalThis as any).setTimeout(r, 0))
 // The world beneath the plugin: nothing answers these in the kit, so each test lays its own bottom.
+const runs: string[][] = []
 const bottoms = (on: any, toasts: string[] = [], disk = new Map<string, string>()) => {
+  runs.length = 0
   on('fs.exists', async (_$: any, e: any) => ({ value: disk.has(e.path) }))
   on('fs.read', async (_$: any, e: any) => ({ value: disk.get(e.path) ?? '' }))
   on('fs.write', async (_$: any, e: any) => { disk.set(e.path, e.text); return { value: undefined } })
   on('session.id', async () => ({ value: 'session_test' }))
   on('session.root', async () => ({ value: '' }))
+  on('process.run', async (_$: any, e: any) => { runs.push(e.argv); return { value: { exitCode: e.argv[1] === 'rev-parse' ? 1 : 0, stdout: '', stderr: '' } } })
   on('ui.toast', async (_$: any, e: any) => { toasts.push(e.text); return { value: undefined } })
   on('ui.status', async () => ({ value: undefined }))
   on('ui.open', async () => ({ value: { isPlaced: false, reason: 'no-surface' } }))
@@ -125,4 +128,21 @@ test('"ambiflex auto" starts auto mode with an ETA and a cost estimate', async (
   expect(entered[0]).toContain('ETA end to end: 2h')
   expect(entered[0]).toContain('Estimated cost: $24 at $12/h (assumed for claude-opus-5-5)')
   expect(toasts.some(t => t.includes('five_hour usage window at 85%'))).toBe(true)
+})
+
+test('an agent spawned for #node gets a worktree branch and the node records it', async ($, on) => {
+  mock.clock(on)
+  bottoms(on)
+  let seen = ''
+  on('tool.call', { tool: 'Agent' }, async (_$, e) => { seen = (e as { prompt: string }).prompt; return { result: 'done' } as never })
+  await $.tool.call({ tool: 'mcp__ambiflex__tree_upsert', title: 'Perf track', lens: 'depth' } as never)
+  await $.tool.call({ tool: 'Agent', description: 'Explore the perf track #n1', prompt: 'Make it fast', subagent_type: 'general-purpose' } as never)
+  expect(runs.some(a => a[0] === 'git' && a[1] === 'worktree' && a.includes('ambiflex/n1-perf-track'))).toBe(true)
+  expect(seen).toContain('.ambiflex/worktrees/n1')
+  const got = await $.tool.call({ tool: 'mcp__ambiflex__tree_get' } as never)
+  const text = String((got as { result?: unknown }).result)
+  expect(text).toContain('needs review')
+  const ui = await $.ui.mount({ plugin: 'ambiflex', surface: 'desktop', component: 'Pane', props: {}, requestId: 'ambiflex', viewport: { columns: 100, rows: 40 } } as never)
+  await ui.press({ key: 'node-n1' } as never)
+  expect(await ui.find({ text: /branch ambiflex\/n1-perf-track/ })).toBeTruthy()
 })
