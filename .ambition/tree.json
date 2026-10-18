@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "goal": "Garder la main sur un travail ambitieux mené avec des agents, et rendre les estimations meilleures à chaque projet",
+  "nodes": [
+    {
+      "title": "v0.1 livrée",
+      "lens": "goal",
+      "status": "done",
+      "summary": "Panneau, graphe SVG, actions, outils, onglet Git. 9 tests passent.",
+      "id": "n1",
+      "parents": [],
+      "createdAt": "2026-10-18T21:13:54.189Z",
+      "updatedAt": "2026-10-18T21:13:54.189Z"
+    },
+    {
+      "title": "Corriger la v0.1",
+      "lens": "depth",
+      "parents": [
+        "n1"
+      ],
+      "summary": "8 défauts réels : injection via tree.json, « terminé » sans vérification, agents homonymes, cache du prompt, conflits Git…",
+      "estimate": "1 j",
+      "id": "n2",
+      "status": "proposed",
+      "createdAt": "2026-10-18T21:13:55.539Z",
+      "updatedAt": "2026-10-18T21:13:55.539Z"
+    },
+    {
+      "title": "Nœuds vérifiables",
+      "lens": "depth",
+      "parents": [
+        "n2"
+      ],
+      "summary": "Aucun nœud « terminé » sans preuve d'un juge externe (test, commande, métrique). Nouveau statut « à valider ».",
+      "estimate": "1 j",
+      "id": "n3",
+      "status": "proposed",
+      "createdAt": "2026-10-18T21:13:56.986Z",
+      "updatedAt": "2026-10-18T21:13:56.986Z"
+    },
+    {
+      "title": "Journal d'événements",
+      "lens": "altitude",
+      "parents": [
+        "n2"
+      ],
+      "summary": "Remplacer tree.json par un journal append-only fusionnable par Git : historique complet, plusieurs sessions, passé et futur.",
+      "estimate": "2 j",
+      "id": "n4",
+      "status": "proposed",
+      "createdAt": "2026-10-18T21:13:58.485Z",
+      "updatedAt": "2026-10-18T21:13:58.485Z"
+    },
+    {
+      "title": "Calibrer les estimations",
+      "lens": "altitude",
+      "parents": [
+        "n4"
+      ],
+      "summary": "Comparer estimé et réel, puis corriger les prochaines estimations (PERT + chemin critique = date d'arrivée).",
+      "estimate": "2 j",
+      "id": "n5",
+      "status": "proposed",
+      "createdAt": "2026-10-18T21:13:59.938Z",
+      "updatedAt": "2026-10-18T21:13:59.938Z"
+    },
+    {
+      "title": "Nœuds ↔ branches ↔ PR",
+      "lens": "range",
+      "parents": [
+        "n4"
+      ],
+      "summary": "Une piste = une branche ou un worktree ; Valider = fusionner la PR. Le raisonnement et le code avancent ensemble.",
+      "estimate": "2 j",
+      "id": "n6",
+      "status": "proposed",
+      "createdAt": "2026-10-18T21:14:01.387Z",
+      "updatedAt": "2026-10-18T21:14:01.387Z"
+    },
+    {
+      "title": "Recherche arborescente",
+      "lens": "range",
+      "parents": [
+        "n3"
+      ],
+      "summary": "Comme un moteur d'échecs : agents en parallèle sur les pistes, score par juge, élagage des pistes faibles.",
+      "estimate": "3 j",
+      "id": "n7",
+      "status": "proposed",
+      "createdAt": "2026-10-18T21:14:02.883Z",
+      "updatedAt": "2026-10-18T21:14:02.883Z"
+    },
+    {
+      "title": "Publier et soumettre",
+      "lens": "step",
+      "parents": [
+        "n5",
+        "n6",
+        "n7"
+      ],
+      "summary": "Dépôt dédié, installation à l'échelle utilisateur, dossier pour le répertoire officiel des plugins.",
+      "estimate": "1 j",
+      "id": "n8",
+      "status": "proposed",
+      "createdAt": "2026-10-18T21:14:04.181Z",
+      "updatedAt": "2026-10-18T21:14:04.181Z"
+    }
+  ]
+}
