@@ -15,6 +15,9 @@ export type TreeNode = {
   verification?: string
   agent?: string
   branch?: string
+  /** The external judge this track declares (a test, benchmark or metric) and the score it reported. */
+  judge?: string
+  score?: number
   startedAt?: string
   finishedAt?: string
   createdAt: string
@@ -45,6 +48,8 @@ export type Cost = {
 
 export type Tree = { version: 1; goal: string; nodes: TreeNode[]; auto: Auto; cost: Cost }
 
+export type BranchInfo = { commits: string[]; pr?: string }
+
 export type Tab = 'tree' | 'git'
 
 declare module 'claude-code' {
@@ -56,6 +61,7 @@ declare module 'claude-code' {
       tab: Tab
       git: string
       agents: string[]
+      branches: Record<string, BranchInfo>
     }
   }
 }

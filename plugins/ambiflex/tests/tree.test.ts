@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { assumedRate, calibration, costEstimate, current, depths, emptyTree, eta, merge, minutes, nextOpen, nodeRef, outline, progress, renderSvg, upsert } from '../hooks/tree'
+import { arrival, assumedRate, autoTarget, calibration, expectedEnd, parseReport, prune, rankChildren, spread, costEstimate, current, depths, emptyTree, eta, merge, minutes, nextOpen, nodeRef, outline, progress, renderSvg, upsert } from '../hooks/tree'
 
 const T0 = '2026-10-18T00:00:00.000Z'
 
@@ -65,8 +65,11 @@ test('parses estimates and finds the critical path', () => {
   expect(e.remaining).toBe(360)
 })
 
-test('picks the next open node whose parents are settled', () => {
+test('picks the next open node whose parents are settled; a goal node never blocks its children', () => {
   expect(nextOpen(sample())!.id).toBe('n2')
+  const g = upsert(upsert(emptyTree(), { title: 'Umbrella', lens: 'goal', status: 'exploring' }, T0).tree, { title: 'Child', lens: 'depth', parents: ['n1'] }, T0).tree
+  expect(nextOpen(g)!.id).toBe('n2')
+  expect(autoTarget(g)!.id).toBe('n2')
   const t = upsert(upsert(sample(), { id: 'n2', status: 'done', verification: 'x' }, T0).tree, { id: 'n3', status: 'done', verification: 'x' }, T0).tree
   expect(nextOpen(t)!.id).toBe('n4')
 })
@@ -108,4 +111,49 @@ test('projects the cost of what is left from the hourly rate', () => {
   expect(costEstimate(sample(), 12)).toBe(72)
   expect(assumedRate('claude-opus-5-5')).toBe(12)
   expect(assumedRate('claude-fable-5-1')).toBe(30)
+})
+
+test('three-point estimates give the PERT expected value and spread', () => {
+  expect(minutes('1h/2h/4h')).toBe(Math.round((60 + 480 + 240) / 6))
+  expect(spread('1h/2h/4h')).toBe(30)
+  expect(spread('2h')).toBe(0)
+})
+
+test('calibration ignores hand-set timestamps and placeholders', () => {
+  let t = sample()
+  // 30 seconds on a 1-day estimate: a timestamp set by hand, not a measurement.
+  t = upsert(t, { title: 'Fake', lens: 'step', estimate: '1d', status: 'exploring' }, '2026-10-19T10:00:00.000Z').tree
+  t = upsert(t, { id: 'n5', status: 'done', verification: 'x' }, '2026-10-19T10:00:30.000Z').tree
+  expect(calibration(t)).toEqual({ factor: 1, samples: 0 })
+  // 10 minutes on a 2-day estimate (ratio 0.01): an agent's real pace, counted.
+  t = upsert(t, { title: 'Fast', lens: 'step', estimate: '2d', status: 'exploring' }, '2026-10-19T10:00:00.000Z').tree
+  t = upsert(t, { id: 'n6', status: 'done', verification: 'x' }, '2026-10-19T10:10:00.000Z').tree
+  expect(calibration(t)).toEqual({ factor: 0.01, samples: 1 })
+  // 3h on a 2h estimate: a measurement.
+  t = upsert(t, { id: 'n2', status: 'exploring' }, '2026-10-19T11:00:00.000Z').tree
+  t = upsert(t, { id: 'n2', status: 'done', verification: 'x' }, '2026-10-19T14:00:00.000Z').tree
+  expect(calibration(t).samples).toBe(2)
+})
+
+test('arrival skips nights and weekends unless the run is continuous', () => {
+  const fri = new Date('2026-10-16T15:00:00.000Z') // Friday 15:00 UTC
+  expect(arrival(fri, 60).toISOString()).toBe('2026-10-16T16:00:00.000Z')
+  expect(arrival(fri, 4 * 60).toISOString()).toBe('2026-10-19T11:00:00.000Z') // 2h Friday, 2h Monday
+  expect(arrival(fri, 4 * 60, true).toISOString()).toBe('2026-10-16T19:00:00.000Z')
+  const end = expectedEnd(sample(), fri)
+  expect(end.minutes).toBe(240)
+})
+
+test('ranks tracks by score and parses an agent report', () => {
+  let t = upsert(emptyTree(), { title: 'P', lens: 'depth' }, T0).tree
+  t = upsert(t, { title: 'a', lens: 'step', parents: ['n1'], score: 0.2 }, T0).tree
+  t = upsert(t, { title: 'b', lens: 'step', parents: ['n1'], score: 0.8 }, T0).tree
+  t = upsert(t, { title: 'c', lens: 'step', parents: ['n1'] }, T0).tree
+  expect(rankChildren(t, 'n1').map(n => n.id)).toEqual(['n3', 'n2', 'n4'])
+  const p = prune(t, 'n1', T0)
+  expect(p.kept!.id).toBe('n3')
+  expect(p.dropped.map(n => n.id)).toEqual(['n2'])
+  expect(p.tree.nodes.find(n => n.id === 'n4')!.status).toBe('proposed')
+  expect(parseReport('blah\nNODE: n2\nRESULT: it works\nSCORE: 0.75')).toEqual({ score: 0.75, result: 'it works', node: 'n2' })
+  expect(parseReport('no score')).toEqual({ score: undefined, result: undefined, node: undefined })
 })

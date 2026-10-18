@@ -158,27 +158,73 @@ export function current(tree: Tree): TreeNode | undefined {
   return byTime.find(n => n.status === 'review') ?? byTime.find(n => n.status === 'exploring') ?? nextOpen(tree)
 }
 
-/** Next node to work on in auto mode: a proposed node whose parents are all finished (or merged/abandoned). */
+/**
+ * Next node to work on in auto mode: a proposed node whose parents are all settled. A goal node is
+ * an umbrella: its children are workable while it is open. Oldest first, so a plan runs in the
+ * order it was written, then shallowest.
+ */
 export function nextOpen(tree: Tree): TreeNode | undefined {
   const byId = new Map(tree.nodes.map(n => [n.id, n]))
   const settled = (id: string) => {
     const p = byId.get(id)
-    return !p || FINISHED.includes(p.status) || p.status === 'abandoned'
+    return !p || FINISHED.includes(p.status) || p.status === 'abandoned' || p.lens === 'goal'
   }
-  const candidates = tree.nodes.filter(n => n.status === 'proposed' && n.parents.every(settled))
+  const candidates = tree.nodes.filter(n => n.status === 'proposed' && n.lens !== 'goal' && n.parents.every(settled))
   const d = depths(tree)
-  return candidates.sort((a, b) => (d.get(a.id) ?? 0) - (d.get(b.id) ?? 0) || a.createdAt.localeCompare(b.createdAt))[0]
+  return candidates.sort((a, b) => a.createdAt.localeCompare(b.createdAt) || (d.get(a.id) ?? 0) - (d.get(b.id) ?? 0))[0]
+}
+
+/** What auto mode works on next: a non-goal node already being explored (resume it), else the next open one. */
+export function autoTarget(tree: Tree): TreeNode | undefined {
+  return tree.nodes.find(n => n.status === 'exploring' && n.lens !== 'goal') ?? nextOpen(tree)
 }
 
 /** "30min" | "2h" | "3d" | "1w" (also "2 h", "1.5d") → minutes; 0 when absent. A day is 8 h, a week 5 days. */
 export function minutes(estimate: string | undefined): number {
   if (!estimate) return 0
-  const m = estimate.match(/([\d.,]+)\s*(min|m|h|d|j|w|sem)\b/i)
+  // Three-point "1h/2h/4h" (optimistic / likely / pessimistic): PERT expected value (o + 4p + pess) / 6.
+  const parts = estimate.split('/').map(one)
+  if (parts.length === 3 && parts.every(v => v > 0)) return Math.round((parts[0]! + 4 * parts[1]! + parts[2]!) / 6)
+  return one(estimate)
+}
+
+function one(text: string): number {
+  const m = text.match(/([\d.,]+)\s*(min|m|h|d|j|w|sem)\b/i)
   if (!m) return 0
   const n = parseFloat(m[1]!.replace(',', '.'))
   const unit = m[2]!.toLowerCase()
   const factor = unit === 'min' || unit === 'm' ? 1 : unit === 'h' ? 60 : unit === 'd' || unit === 'j' ? 480 : 2400
   return Math.round(n * factor)
+}
+
+/** Spread of a three-point estimate, in minutes (pessimistic − optimistic) / 6: the PERT standard deviation. */
+export function spread(estimate: string | undefined): number {
+  if (!estimate) return 0
+  const parts = estimate.split('/').map(one)
+  return parts.length === 3 && parts.every(v => v > 0) ? Math.round((parts[2]! - parts[0]!) / 6) : 0
+}
+
+/**
+ * Turns working minutes into a calendar date: 8 working hours a day, Monday to Friday, from `from`.
+ * A run in auto mode works around the clock, so pass `continuous` to count every hour.
+ */
+export function arrival(from: Date, workingMinutes: number, continuous = false): Date {
+  if (workingMinutes <= 0) return from
+  if (continuous) return new Date(from.getTime() + workingMinutes * 60000)
+  const d = new Date(from.getTime())
+  let left = workingMinutes
+  while (left > 0) {
+    const day = d.getUTCDay()
+    if (day === 0 || day === 6) { d.setUTCDate(d.getUTCDate() + 1); d.setUTCHours(9, 0, 0, 0); continue }
+    const hour = d.getUTCHours() + d.getUTCMinutes() / 60
+    if (hour >= 17) { d.setUTCDate(d.getUTCDate() + 1); d.setUTCHours(9, 0, 0, 0); continue }
+    if (hour < 9) d.setUTCHours(9, 0, 0, 0)
+    const roomToday = (17 - Math.max(9, d.getUTCHours() + d.getUTCMinutes() / 60)) * 60
+    const step = Math.min(roomToday, left)
+    d.setTime(d.getTime() + step * 60000)
+    left -= step
+  }
+  return d
 }
 
 export function human(min: number): string {
@@ -220,14 +266,31 @@ export function eta(tree: Tree): { critical: number; remaining: number; path: st
 }
 
 /** Actual minutes spent on finished nodes vs. their estimates: a calibration factor (1 = on time, 2 = twice as long). */
+/**
+ * Median of actual / estimated over finished nodes. Only nodes the plugin timed count: at least 2
+ * minutes of work on an estimate of at least 30 minutes, and a ratio within [0.002, 20]. Estimates
+ * are usually written in human effort while an agent finishes a "2d" node in minutes, so very low
+ * ratios are real; what the floor rejects is a timestamp set by hand seconds apart.
+ */
 export function calibration(tree: Tree): { factor: number; samples: number } {
   const pairs = tree.nodes
-    .filter(n => n.startedAt && n.finishedAt && minutes(n.estimate) > 0)
-    .map(n => (Date.parse(n.finishedAt!) - Date.parse(n.startedAt!)) / 60000 / minutes(n.estimate))
-    .filter(r => Number.isFinite(r) && r > 0)
+    .filter(n => n.startedAt && n.finishedAt && minutes(n.estimate) >= 30)
+    .map(n => ({ actual: (Date.parse(n.finishedAt!) - Date.parse(n.startedAt!)) / 60000, est: minutes(n.estimate) }))
+    .filter(p => Number.isFinite(p.actual) && p.actual >= 2)
+    .map(p => p.actual / p.est)
+    .filter(r => r >= 0.002 && r <= 20)
     .sort((a, b) => a - b)
   if (pairs.length === 0) return { factor: 1, samples: 0 }
   return { factor: +pairs[Math.floor(pairs.length / 2)]!.toFixed(2), samples: pairs.length }
+}
+
+/** When the plan should land: the calibrated critical path from now, with the three-point spread as ±. */
+export function expectedEnd(tree: Tree, now: Date): { at: Date; plusMinus: number; minutes: number } {
+  const e = eta(tree)
+  const c = calibration(tree)
+  const min = Math.round(e.critical * c.factor)
+  const plusMinus = Math.round(Math.sqrt(e.path.reduce((a, id) => a + spread(tree.nodes.find(n => n.id === id)?.estimate) ** 2, 0)) * c.factor)
+  return { at: arrival(now, min, tree.auto.on), plusMinus, minutes: min }
 }
 
 const esc = (text: string) =>
@@ -311,15 +374,49 @@ export function outline(tree: Tree): string {
     `- ${n.id} [${LENS_LABEL[n.lens]} · ${STATUS_LABEL[n.status]}${n.estimate ? ` · ${n.estimate}` : ''}] ${cut(n.title, 80)}`
     + (n.parents.length ? ` ← ${n.parents.join(', ')}` : '')
     + (n.agent ? ` (agent: ${cut(n.agent, 40)})` : '')
+    + (typeof n.score === 'number' ? ` score ${n.score}` : '')
+    + (n.judge ? ` judge: ${cut(n.judge, 60)}` : '')
     + (n.summary ? `\n    ${cut(n.summary, 200)}` : ''),
   )
   const auto = tree.auto.on ? `Auto mode: ON (turn ${tree.auto.turns}/${tree.auto.maxTurns}, started ${tree.auto.startedAt ?? '?'})` : 'Auto mode: off'
   return `Goal: ${cut(tree.goal || '(not set)', 200)}\nProgress: ${p.finished}/${p.total} (${p.pct}%), ${p.exploring} exploring, ${p.review} need review\n`
     + `ETA: critical path ${human(e.critical)} (${e.path.join(' → ') || 'none'}), remaining effort ${human(e.remaining)}`
     + (c.samples ? `, calibration ×${c.factor} over ${c.samples} nodes` : '')
+    + `\nExpected end: ${endLabel(tree, new Date(tree.nodes.reduce((m, n) => (n.updatedAt > m ? n.updatedAt : m), '') || Date.now()))}`
     + `\nCost: $${tree.cost.spentUsd.toFixed(2)} spent on this plan ($${tree.cost.sessionUsd.toFixed(2)} this session), est. $${tree.cost.estimateUsd.toFixed(2)} to finish at $${tree.cost.ratePerHour.toFixed(2)}/h${tree.cost.assumedRate ? ' (assumed for ' + (tree.cost.model || 'this model') + ', measured after the first turns)' : ' (measured)'}`
     + (tree.cost.rateLimits.length ? `; limits: ${tree.cost.rateLimits.map(r => `${r.kind} ${r.percentUsed}%`).join(', ')}` : '')
     + `\n${auto}\n${lines.join('\n')}`
+}
+
+export function endLabel(tree: Tree, now: Date): string {
+  const end = expectedEnd(tree, now)
+  if (end.minutes <= 0) return 'nothing left'
+  const day = end.at.toISOString().slice(0, 10)
+  return `${day}${end.plusMinus ? ` ± ${human(end.plusMinus)}` : ''} (${human(end.minutes)} of work${tree.auto.on ? ', around the clock' : ', 8h days'})`
+}
+
+/** A parent's tracks ranked by score (unscored last), abandoned ones left out. */
+export function rankChildren(tree: Tree, parent: string): TreeNode[] {
+  return tree.nodes
+    .filter(n => n.parents.includes(parent) && n.status !== 'abandoned')
+    .sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity) || a.createdAt.localeCompare(b.createdAt))
+}
+
+/** Abandons every scored track under `parent` but the best; unscored tracks are kept. */
+export function prune(tree: Tree, parent: string, now: string): { tree: Tree; kept?: TreeNode; dropped: TreeNode[] } {
+  const ranked = rankChildren(tree, parent).filter(n => typeof n.score === 'number')
+  const [kept, ...rest] = ranked
+  let next = tree
+  for (const n of rest) next = upsert(next, { id: n.id, status: 'abandoned', summary: `${n.summary ?? ''} Pruned: scored ${n.score} against ${kept!.score} for ${kept!.id}.`.trim() }, now).tree
+  return { tree: next, kept, dropped: rest }
+}
+
+/** Reads a score and a verdict line out of an agent's report: "SCORE: 0.82" and "RESULT: …". */
+export function parseReport(answer: string): { score?: number; result?: string; node?: string } {
+  const score = answer.match(/SCORE:\s*(-?[\d.]+)/i)
+  const result = answer.match(/RESULT:\s*(.+)/i)
+  const node = answer.match(/NODE:\s*([A-Za-z0-9_-]+)/i)
+  return { score: score ? parseFloat(score[1]!) : undefined, result: result ? result[1]!.trim().slice(0, 300) : undefined, node: node ? node[1] : undefined }
 }
 
 /** Finds `#n12` in an agent description to attach the agent to a node. */

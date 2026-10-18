@@ -9,8 +9,10 @@
       "summary": "Panneau, graphe SVG, actions, outils, onglet Git. 9 tests passent.",
       "id": "n1",
       "parents": [],
+      "verification": "migrated from snapshot (unverified)",
       "createdAt": "2026-10-18T21:13:54.189Z",
-      "updatedAt": "2026-10-18T21:13:54.189Z"
+      "updatedAt": "2026-10-18T21:13:54.189Z",
+      "finishedAt": "2026-10-18T21:13:54.189Z"
     },
     {
       "title": "Corriger la v0.1",
@@ -22,11 +24,11 @@
       "estimate": "1d",
       "id": "n2",
       "status": "done",
-      "createdAt": "2026-10-18T21:13:55.539Z",
-      "updatedAt": "2026-10-18T21:44:32.001088Z",
       "verification": "claude plugin validate + 17 tests green (v0.2)",
       "startedAt": "2026-10-18T21:30:00.000Z",
-      "finishedAt": "2026-10-18T21:44:32.001088Z"
+      "finishedAt": "2026-10-18T21:44:32.001088Z",
+      "createdAt": "2026-10-18T21:13:55.539Z",
+      "updatedAt": "2026-10-18T21:44:32.001088Z"
     },
     {
       "title": "Nœuds vérifiables",
@@ -38,116 +40,137 @@
       "estimate": "1d",
       "id": "n3",
       "status": "done",
-      "createdAt": "2026-10-18T21:13:56.986Z",
-      "updatedAt": "2026-10-18T21:44:32.001088Z",
       "verification": "claude plugin validate + 17 tests green (v0.2)",
       "startedAt": "2026-10-18T21:30:00.000Z",
-      "finishedAt": "2026-10-18T21:44:32.001088Z"
+      "finishedAt": "2026-10-18T21:44:32.001088Z",
+      "createdAt": "2026-10-18T21:13:56.986Z",
+      "updatedAt": "2026-10-18T21:44:32.001088Z"
     },
     {
-      "title": "Journal d'événements",
+      "title": "Event log",
       "lens": "altitude",
       "parents": [
         "n2"
       ],
-      "summary": "Remplacer tree.json par un journal append-only fusionnable par Git : historique complet, plusieurs sessions, passé et futur.",
+      "summary": "Replace the whole-file tree.json with an append-only .ambiflex/log.jsonl that Git merges without conflicts (merge=union); the tree is replayed from it; tree.json stays as a derived snapshot.",
       "estimate": "2d",
       "id": "n4",
-      "status": "proposed",
+      "status": "done",
+      "branch": "claude/ambiflex-auto-run",
+      "startedAt": "2026-10-18T21:56:59.354Z",
       "createdAt": "2026-10-18T21:13:58.485Z",
-      "updatedAt": "2026-10-18T21:13:58.485Z"
+      "updatedAt": "2026-10-18T21:59:40.417Z",
+      "detail": "## Event log (Phase 2)\n\n- `.ambiflex/log.jsonl`: one JSON line per change (`goal`, `upsert`, `merge`, `auto`), append-only, with the session id and a timestamp. `.ambiflex/.gitattributes` sets `merge=union` so two sessions' logs merge without conflicts.\n- `replay(events)` rebuilds the tree in time order. When two sessions created the same id offline, the later one is renamed (`n7-b`) and that session's later references follow.\n- `tree.json` stays as a derived snapshot (readable, synced to the mobile page). Cost is only in the snapshot.\n- Migration: a session that finds a `tree.json` but no log converts it once (`eventsFromSnapshot`).\n\nJudge: `claude plugin test` 25/25, migration script round trip `true`.",
+      "verification": "claude plugin test: 25 pass (replay equals state, union of two divergent logs recovers both subtrees with renamed collisions, snapshot migration round-trips); real tree.json migrated to log.jsonl with an exact round trip",
+      "finishedAt": "2026-10-18T21:59:40.417Z"
     },
     {
-      "title": "Calibrer les estimations",
+      "title": "Calibrated estimates",
       "lens": "altitude",
       "parents": [
         "n4"
       ],
-      "summary": "Comparer estimé et réel, puis corriger les prochaines estimations (PERT + chemin critique = date d'arrivée).",
+      "summary": "Three-point estimates (o/p/pess), critical path (done), arrival date in the header, calibration factor applied to new estimates (measured; the ×0.03 artefact from hand-set timestamps must be excluded).",
       "estimate": "2d",
       "id": "n5",
-      "status": "proposed",
+      "status": "done",
       "createdAt": "2026-10-18T21:13:59.938Z",
-      "updatedAt": "2026-10-18T21:13:59.938Z"
+      "updatedAt": "2026-10-18T22:04:40.939Z",
+      "detail": "## Calibrated estimates (Phase 3)\n\n- Three-point estimates `1h/2h/4h` (optimistic / likely / pessimistic): expected value (o + 4p + pess) / 6, spread (pess − o) / 6. Single values still work.\n- Calibration = median of actual / estimated over finished nodes, counting only real measurements: ≥ 2 min of work on an estimate ≥ 30 min, ratio within [0.05, 20]. The ×0.03 artefact from hand-set timestamps is now excluded.\n- Expected end: the calibrated critical path turned into a calendar date (8h days, Monday to Friday; around the clock in auto mode), with ± from the three-point spread. Shown in the panel, in `tree_get` and when auto mode starts.\n- The method tells Claude to multiply new estimates by the reported calibration factor.\n\nJudge: `claude plugin test` 28/28.",
+      "verification": "claude plugin test: 28 pass (PERT value and spread of \"1h/2h/4h\", calibration rejects hand-set timestamps and keeps a 3h-on-2h measurement at ×1.5, arrival skips nights and weekends unless continuous)",
+      "finishedAt": "2026-10-18T22:04:40.939Z"
     },
     {
-      "title": "Nœuds ↔ branches ↔ PR",
+      "title": "Nodes ↔ branches ↔ PR",
       "lens": "range",
       "parents": [
         "n4"
       ],
-      "summary": "Une piste = une branche ou un worktree ; Valider = fusionner la PR. Le raisonnement et le code avancent ensemble.",
+      "summary": "One track = one branch or worktree; a node shows its commits and PR; \"Validate\" on a node with a PR proposes the merge (never merges alone).",
       "estimate": "2d",
       "id": "n6",
-      "status": "proposed",
+      "status": "done",
       "createdAt": "2026-10-18T21:14:01.387Z",
-      "updatedAt": "2026-10-18T21:14:01.387Z"
+      "updatedAt": "2026-10-18T22:06:34.744Z",
+      "detail": "## Nodes ↔ branches ↔ PR (Phase 4)\n\n- An agent spawned with `#<id>` gets that node its own branch `ambiflex/<id>-<slug>` in a worktree under `.ambiflex/worktrees/<id>` (git-ignored); the agent is told to work and commit there, never on the main checkout.\n- The panel shows, per node with a branch, its commits beyond `main` and its PR when `gh` can report one; the Git tab refreshes them after every git command.\n- \"Validate\" on a node with a branch asks Claude to propose the merge of that branch (or its PR) and never to merge without explicit confirmation.\n\nJudge: `claude plugin test` 29/29 and a real-repo run of the worktree commands.",
+      "verification": "claude plugin test: 29 pass (an agent spawned for #n1 gets `git worktree add .ambiflex/worktrees/n1 -b ambiflex/n1-perf-track`, its prompt names the worktree, the node records the branch and the panel shows it); the same git commands verified on a real temporary repository (worktree, commit, `git log main..branch` lists it)",
+      "finishedAt": "2026-10-18T22:06:34.744Z"
     },
     {
-      "title": "Recherche arborescente",
+      "title": "Tree search",
       "lens": "range",
       "parents": [
         "n3"
       ],
-      "summary": "Comme un moteur d'échecs : agents en parallèle sur les pistes, score par juge, élagage des pistes faibles.",
+      "summary": "tree_explore / tree_prune built and unit-tested (31 tests). Real end-to-end judge pending: the CSV-parse demo under n16 must run with 3 parallel explorers and the winner must beat the baseline on demo/bench.js.",
       "estimate": "3d",
       "id": "n7",
-      "status": "proposed",
+      "status": "done",
       "createdAt": "2026-10-18T21:14:02.883Z",
-      "updatedAt": "2026-10-18T21:14:02.883Z"
+      "updatedAt": "2026-10-18T22:13:00.239Z",
+      "startedAt": "2026-10-18T22:10:54.432Z",
+      "detail": "## Tree search (Phase 5)\n\n- `tree_explore <parent>`: one subagent per proposed child track, in parallel, each in its own worktree branch, with the budget (agents × minutes) echoed before launch. Each agent is told to end with `NODE:` / `RESULT:` / `SCORE:` measured by the track's declared judge.\n- Scores land on the nodes as the agents finish (matched by agent id, or by the NODE line on hosts that do not name agents); the nodes move to *needs review*.\n- `tree_prune <parent>`: keeps the best-scored track, abandons the others with the reason. The panel ranks the tracks and offers *Prune weak* and *Merge best*.\n- Real run: demo/parse.js, baseline 334 ms. Shaped rows (7×) beat single pass (4-7×) and no-spread (3×). Merged: 44 ms on main.\n\nJudge: the independent benchmark on the merged code, and 31 tests.",
+      "verification": "End-to-end run on a real problem: tree_explore spawned 3 agents in their own worktree branches, each reported NODE/RESULT/SCORE through its judge, scores landed on the nodes automatically, tree_prune kept the best, the winner merged into the main branch benches at 7.38× (independent measurement); plus 31 unit tests",
+      "finishedAt": "2026-10-18T22:13:00.239Z"
     },
     {
-      "title": "Publier et soumettre",
+      "title": "Publish and submit",
       "lens": "step",
       "parents": [
         "n5",
         "n6",
         "n7"
       ],
-      "summary": "Dépôt dédié, installation à l'échelle utilisateur, dossier pour le répertoire officiel des plugins.",
+      "summary": "Published from the profile repository (marketplace \"imade\"); user-scope install verified from an empty environment. Submission notes in docs/ambiflex-submission.md. The dedicated repository is deferred to launch day (user's choice: needs a repo created by hand).",
       "estimate": "1d",
       "id": "n8",
-      "status": "proposed",
+      "status": "done",
       "createdAt": "2026-10-18T21:14:04.181Z",
-      "updatedAt": "2026-10-18T21:14:04.181Z"
+      "updatedAt": "2026-10-18T22:31:59.807Z",
+      "startedAt": "2026-10-18T22:26:18.659Z",
+      "verification": "Fresh-HOME install from the README command: `claude plugin marketplace add ImadeBenToumAI/ImadeBenToumAI` then `claude plugin install ambiflex@imade` succeeds; `claude plugin list` shows ambiflex@imade at user scope",
+      "finishedAt": "2026-10-18T22:31:59.807Z"
     },
     {
-      "title": "Stratégie adoption",
+      "title": "Adoption strategy",
       "lens": "goal",
       "status": "exploring",
       "parents": [
         "n1"
       ],
-      "summary": "Le but derrière le buzz : être la personne qui a montré comment un humain garde la main sur des agents. Le plugin est la preuve, pas le but.",
+      "summary": "Umbrella for n10-n15: settled when its children are. The plugin now treats goal nodes as umbrellas (their children are workable while they stay open) and works the plan in the order it was written.",
       "id": "n9",
       "createdAt": "2026-10-18T21:20:05.843Z",
-      "updatedAt": "2026-10-18T21:20:05.843Z"
+      "updatedAt": "2026-10-18T22:02:16.531Z",
+      "startedAt": "2026-10-18T21:20:05.843Z"
     },
     {
-      "title": "Preuve avant promo",
+      "title": "Proof before promo",
       "lens": "altitude",
       "parents": [
-        "n9"
+        "n9",
+        "n5"
       ],
-      "summary": "Pas de lancement sans une démo réelle mesurée : un projet mené avec 3 pistes en parallèle, temps estimé vs réel, vidéo de 60 s.",
+      "summary": "No launch without a real measured demo: a project run with 3 tracks in parallel, estimated vs actual time, a 60-second video. Needs calibrated estimates (n5) first.",
       "estimate": "2w",
       "id": "n10",
       "status": "proposed",
       "createdAt": "2026-10-18T21:20:08.591Z",
-      "updatedAt": "2026-10-18T21:20:08.591Z"
+      "updatedAt": "2026-10-18T22:02:18.114Z"
     },
     {
-      "title": "Contenu > plugin",
+      "title": "Content over plugin",
       "lens": "depth",
       "parents": [
         "n9"
       ],
-      "summary": "Ce que font les gens remarqués : ils publient leurs apprentissages, pas leur outil. Une série d'articles « ce que j'ai appris en pilotant des agents » avec données.",
+      "summary": "Four articles, one a week, each with a verifiable number. Drafts 1 (\"Done means nothing when an agent says it\") and 4 (plugin API field notes) written from the session's real data; 2 (calibration) and 3 (tree search) next. The user edits and signs.",
       "estimate": "4w",
       "id": "n11",
-      "status": "proposed",
+      "status": "exploring",
       "createdAt": "2026-10-18T21:20:11.140Z",
-      "updatedAt": "2026-10-18T21:20:11.140Z"
+      "updatedAt": "2026-10-18T22:26:18.644Z",
+      "startedAt": "2026-10-18T22:26:18.644Z"
     },
     {
       "title": "Distribution",
@@ -203,11 +226,105 @@
       "status": "proposed",
       "createdAt": "2026-10-18T21:20:22.882Z",
       "updatedAt": "2026-10-18T21:20:22.882Z"
+    },
+    {
+      "title": "Demo: CSV parse",
+      "lens": "step",
+      "parents": [
+        "n7",
+        "n19"
+      ],
+      "summary": "Three explorers in parallel on demo/parse.js: no object spread (3×), single pass (4-7×), shaped rows (7×). Pruned to the shaped-rows track and merged it: 334 ms → 44 ms on the main checkout.",
+      "estimate": "1h/2h/4h",
+      "judge": "BASELINE_MS=334 node demo/bench.js <impl> → SCORE = speedup; wrong output scores 0",
+      "id": "n16",
+      "status": "done",
+      "createdAt": "2026-10-18T22:10:54.450Z",
+      "updatedAt": "2026-10-18T22:12:53.443Z",
+      "verification": "Independent run of demo/bench.js on the main checkout after merging the winner: 334 ms → 44 ms, SCORE 7.38 (agents reported 3.15 / 6.66 / 7.3; my own runs 2.95 / 4.41 / 7.24, same ranking); correctness gate passes",
+      "branch": "ambiflex/n19-track-shaped-rows",
+      "finishedAt": "2026-10-18T22:12:53.443Z"
+    },
+    {
+      "title": "Track: no object spread",
+      "lens": "step",
+      "parents": [
+        "n16"
+      ],
+      "summary": "Replacing per-cell object spread with direct assignment (plus hoisted header trimming) cuts parse time from ~334 ms to ~105 ms while keeping split-based parsing. Pruned: scored 3.15 against 7.3 for n19.",
+      "estimate": "20min/30min/1h",
+      "judge": "BASELINE_MS=334 node demo/bench.js demo/parse.js (run from the worktree)",
+      "id": "n17",
+      "status": "abandoned",
+      "createdAt": "2026-10-18T22:10:58.177Z",
+      "updatedAt": "2026-10-18T22:12:43.776Z",
+      "branch": "ambiflex/n17-track-no-object-spread",
+      "agent": "",
+      "startedAt": "2026-10-18T22:11:14.689Z",
+      "score": 3.15
+    },
+    {
+      "title": "Track: single pass",
+      "lens": "step",
+      "parents": [
+        "n16"
+      ],
+      "summary": "Single-pass indexOf parser passes the correctness gate and runs ~5-6x faster than the 334 ms baseline (best 50.1 ms). Pruned: scored 6.66 against 7.3 for n19.",
+      "estimate": "30min/1h/2h",
+      "judge": "BASELINE_MS=334 node demo/bench.js demo/parse.js (run from the worktree)",
+      "id": "n18",
+      "status": "abandoned",
+      "createdAt": "2026-10-18T22:11:00.356Z",
+      "updatedAt": "2026-10-18T22:12:43.768Z",
+      "branch": "ambiflex/n18-track-single-pass",
+      "agent": "",
+      "startedAt": "2026-10-18T22:11:14.857Z",
+      "score": 6.66
+    },
+    {
+      "title": "Track: shaped rows",
+      "lens": "step",
+      "parents": [
+        "n16"
+      ],
+      "summary": "Header-built row factory with a single hidden class plus lazy trim cuts the parse from ~334ms to ~42ms, about 7–8x faster than baseline.",
+      "estimate": "30min/1h/2h",
+      "judge": "BASELINE_MS=334 node demo/bench.js demo/parse.js (run from the worktree)",
+      "id": "n19",
+      "status": "merged",
+      "createdAt": "2026-10-18T22:11:02.537Z",
+      "updatedAt": "2026-10-18T22:12:49.747Z",
+      "branch": "ambiflex/n19-track-shaped-rows",
+      "agent": "",
+      "startedAt": "2026-10-18T22:11:14.999Z",
+      "score": 7.3,
+      "finishedAt": "2026-10-18T22:12:49.747Z"
     }
   ],
   "auto": {
-    "on": false,
-    "turns": 0,
-    "maxTurns": 40
+    "on": true,
+    "turns": 18,
+    "maxTurns": 40,
+    "startedAt": "2026-10-18T21:55:08.518Z"
+  },
+  "cost": {
+    "spentUsd": 48.14,
+    "sessionUsd": 48.14,
+    "ratePerHour": 20.28,
+    "assumedRate": false,
+    "estimateUsd": 301.8,
+    "model": "claude-fable-5-1",
+    "rateLimits": [
+      {
+        "kind": "five_hour",
+        "percentUsed": 2,
+        "resetsAt": "2026-10-19T01:20:00.000Z"
+      },
+      {
+        "kind": "seven_day",
+        "percentUsed": 16,
+        "resetsAt": "2026-10-22T21:00:00.000Z"
+      }
+    ]
   }
 }
