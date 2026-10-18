@@ -4,7 +4,9 @@ Everything launch day needs, ready to paste. Drafted by Claude from the session'
 
 ## 1. The 60-second video (node n10)
 
-Screen recording of the Ambiflex page on a phone (or the desktop pane), no voice-over, captions only. One take per shot; cut together in any editor. Total: 60 s.
+**Rendered, ready to post:** `assets/launch/ambiflex-portrait.mp4` (1080×1920, X / LinkedIn / Shorts) and `assets/launch/ambiflex-landscape.mp4` (1920×1080, HN / YouTube), plus one still per shot (`assets/launch/0N-*.png`) for posts and the README. Re-render after a tree change with `node tools/launch-video/record.js portrait|landscape` (needs Playwright's Chromium and ffmpeg; the page it records embeds `.ambiflex/tree.json`).
+
+Shot list, as rendered (captions only, no voice-over):
 
 | # | Seconds | What is on screen | Caption |
 |---|---|---|---|

@@ -1,21 +1,21 @@
 {
   "version": 1,
-  "goal": "Faire d'ambition-tree le plugin Claude Code de référence pour piloter des agents, assez remarqué pour qu'Anthropic s'y intéresse",
+  "goal": "Make Ambiflex the reference Claude Code plugin for steering agents: noticed, used, and improved by others",
   "nodes": [
     {
-      "title": "v0.1 livrée",
+      "title": "v0.1 shipped",
       "lens": "goal",
       "status": "done",
-      "summary": "Panneau, graphe SVG, actions, outils, onglet Git. 9 tests passent.",
+      "summary": "Panel, SVG graph, actions, tools, Git tab. 9 tests passing.",
       "id": "n1",
       "parents": [],
       "verification": "migrated from snapshot (unverified)",
       "createdAt": "2026-10-18T21:13:54.189Z",
-      "updatedAt": "2026-10-18T21:13:54.189Z",
+      "updatedAt": "2026-10-18T23:10:36.728Z",
       "finishedAt": "2026-10-18T21:13:54.189Z"
     },
     {
-      "title": "Corriger la v0.1",
+      "title": "Fix v0.1",
       "lens": "depth",
       "parents": [
         "n1"
@@ -28,10 +28,10 @@
       "startedAt": "2026-10-18T21:30:00.000Z",
       "finishedAt": "2026-10-18T21:44:32.001088Z",
       "createdAt": "2026-10-18T21:13:55.539Z",
-      "updatedAt": "2026-10-18T21:44:32.001088Z"
+      "updatedAt": "2026-10-18T23:10:37.397Z"
     },
     {
-      "title": "Nœuds vérifiables",
+      "title": "Verifiable nodes",
       "lens": "depth",
       "parents": [
         "n2"
@@ -44,7 +44,7 @@
       "startedAt": "2026-10-18T21:30:00.000Z",
       "finishedAt": "2026-10-18T21:44:32.001088Z",
       "createdAt": "2026-10-18T21:13:56.986Z",
-      "updatedAt": "2026-10-18T21:44:32.001088Z"
+      "updatedAt": "2026-10-18T23:10:37.948Z"
     },
     {
       "title": "Event log",
@@ -102,12 +102,12 @@
       "parents": [
         "n3"
       ],
-      "summary": "tree_explore / tree_prune built and unit-tested (31 tests). Real end-to-end judge pending: the CSV-parse demo under n16 must run with 3 parallel explorers and the winner must beat the baseline on demo/bench.js.",
+      "summary": "tree_explore spawns one agent per track in its own branch; scores land from their reports; tree_prune keeps the best. Proven on demo/parse.js: three explorers, winner merged at 7.4×.",
       "estimate": "3d",
       "id": "n7",
       "status": "done",
       "createdAt": "2026-10-18T21:14:02.883Z",
-      "updatedAt": "2026-10-18T22:13:00.239Z",
+      "updatedAt": "2026-10-18T23:15:37.784Z",
       "startedAt": "2026-10-18T22:10:54.432Z",
       "detail": "## Tree search (Phase 5)\n\n- `tree_explore <parent>`: one subagent per proposed child track, in parallel, each in its own worktree branch, with the budget (agents × minutes) echoed before launch. Each agent is told to end with `NODE:` / `RESULT:` / `SCORE:` measured by the track's declared judge.\n- Scores land on the nodes as the agents finish (matched by agent id, or by the NODE line on hosts that do not name agents); the nodes move to *needs review*.\n- `tree_prune <parent>`: keeps the best-scored track, abandons the others with the reason. The panel ranks the tracks and offers *Prune weak* and *Merge best*.\n- Real run: demo/parse.js, baseline 334 ms. Shaped rows (7×) beat single pass (4-7×) and no-spread (3×). Merged: 44 ms on main.\n\nJudge: the independent benchmark on the merged code, and 31 tests.",
       "verification": "End-to-end run on a real problem: tree_explore spawned 3 agents in their own worktree branches, each reported NODE/RESULT/SCORE through its judge, scores landed on the nodes automatically, tree_prune kept the best, the winner merged into the main branch benches at 7.38× (independent measurement); plus 31 unit tests",
@@ -151,12 +151,14 @@
         "n9",
         "n5"
       ],
-      "summary": "The measured demo exists (3 agents, 334 → 44 ms, independent benchmark). The 60-second video script is in docs/launch-kit.md, shot by shot; the recording is the user's.",
+      "summary": "The measured demo (3 agents, 334 → 44 ms) and the 60-second video, both cuts, rendered from the real tree with captions: assets/launch/. Ready to post; the user only tags and publishes.",
       "estimate": "2w",
       "id": "n10",
-      "status": "review",
+      "status": "done",
       "createdAt": "2026-10-18T21:20:08.591Z",
-      "updatedAt": "2026-10-18T22:41:04.342Z"
+      "updatedAt": "2026-10-18T23:20:29.931Z",
+      "verification": "assets/launch/ambiflex-portrait.mp4 (1080×1920, 66 s) and ambiflex-landscape.mp4 (1920×1080) rendered by tools/launch-video/record.js from the real tree and the real benchmark output; 8 stills per format; every number shown is the tree's own",
+      "finishedAt": "2026-10-18T23:20:29.931Z"
     },
     {
       "title": "Content over plugin",
@@ -310,8 +312,8 @@
     "startedAt": "2026-10-18T21:55:08.518Z"
   },
   "cost": {
-    "spentUsd": 58.84,
-    "sessionUsd": 58.84,
+    "spentUsd": 59.77,
+    "sessionUsd": 59.77,
     "ratePerHour": 30,
     "assumedRate": true,
     "estimateUsd": 331.2,
