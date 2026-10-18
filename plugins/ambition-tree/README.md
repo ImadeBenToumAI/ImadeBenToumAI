@@ -9,7 +9,9 @@ Plugin Claude Code qui applique la méthode **be-ambitious** de Felix Rieseberg 
 - **Onglet Branches Git** : branches, commits et fusions (`git log --graph --all`), actualisé après chaque commande git.
 - **Historique** : l'arbre est enregistré dans `.ambition/tree.json` du projet, donc versionné avec le code (passé et futur visibles).
 
-Claude remplit l'arbre via les outils `tree_set_goal`, `tree_upsert`, `tree_merge`, `tree_get`. Commande : `/arbre`.
+Claude remplit l'arbre via les outils `tree_set_goal`, `tree_upsert`, `tree_merge`, `tree_get`.
+
+**Sur mobile**, l'app ne place pas de panneau : tape `/arbre` et l'arbre se dessine dans le fil de conversation, avec les mêmes boutons. Sur desktop, `/arbre` ouvre le panneau.
 
 ## Installation
 

@@ -1,5 +1,5 @@
 import { atom, read, update } from 'claude-code'
-import type { EngineInterface, Register } from 'claude-code'
+import type { EngineInterface, Register, ResolveInput } from 'claude-code'
 
 import type { Lens, Status, Tab, Tree } from '../types'
 import {
@@ -83,6 +83,143 @@ async function trackAgentEnd($: $, label: string, id: string | undefined) {
   await save($, upsert(after, { id, status, agent: '' }, await nowIso($)).tree)
 }
 
+async function drawTree($: $, e: ResolveInput) {
+  const ui = $.ui.resolve(e) as any
+  const { Box, Text, Button, Markdown, Code } = ui
+  const t = await read($, tree)
+  const sel = await read($, selected)
+  const isExpanded = await read($, expanded)
+  const activeTab = await read($, tab)
+  const running = await read($, agents)
+  const p = progress(t)
+  const cur = current(t)
+  const node = t.nodes.find(n => n.id === sel)
+
+  const steer = async (text: string) => {
+    await $.prompt.submit({ text: `[arbre] ${text}` })
+  }
+  const setStatus = async (id: string, status: Status) =>
+    save($, upsert(await read($, tree), { id, status }, await nowIso($)).tree)
+
+  const tabs = (
+    <Box flexDirection="row" gap={1}>
+      <Button key="tab-tree" variant={activeTab === 'tree' ? 'primary' : undefined} onPress={() => update($, tab, () => 'tree' as Tab)}>
+        Raisonnement
+      </Button>
+      <Button key="tab-git" variant={activeTab === 'git' ? 'primary' : undefined} onPress={async () => { await refreshGit($); await update($, tab, () => 'git' as Tab) }}>
+        Branches Git
+      </Button>
+    </Box>
+  )
+
+  if (activeTab === 'git') {
+    const text = await read($, git)
+    return (
+      <Box flexDirection="column" gap={1}>
+        {tabs}
+        <Text bold>Branches, commits et fusions</Text>
+        <Code source={text || 'Chargement…'} language="text" />
+        <Button key="git-refresh" onPress={() => refreshGit($)}>Actualiser</Button>
+      </Box>
+    )
+  }
+
+  const header = (
+    <Box flexDirection="column">
+      <Text bold>{t.goal || "Pas encore d'objectif : décris ta tâche dans le chat."}</Text>
+      <Text dimColor>
+        {`Avancement ${p.finished}/${p.total} (${p.pct} %) · ${p.exploring} en exploration`}
+        {cur ? ` · tu es ici : ${cur.id} ${cur.title}` : ''}
+      </Text>
+      {running.length > 0 && <Text color="red">{`Sous-agents actifs : ${running.join(' · ')}`}</Text>}
+    </Box>
+  )
+
+  const svg = renderSvg(t, sel)
+  const graph = ui.Svg && t.nodes.length > 0
+    ? <ui.Svg source={svg.source} alt={outline(t)} isInteractive />
+    : null
+
+  const list = (
+    <Box flexDirection="column">
+      {t.nodes.map(n => (
+        <Button
+          key={`node-${n.id}`}
+          plain
+          onPress={() => update($, selected, s => (s === n.id ? '' : n.id))}
+        >
+          {`${n.id === sel ? '▶ ' : ''}${n.id} ${n.title} `}
+          <Text dimColor>{`${LENS_LABEL[n.lens]} · ${STATUS_LABEL[n.status]}${n.estimate ? ` · ${n.estimate}` : ''}`}</Text>
+        </Button>
+      ))}
+    </Box>
+  )
+
+  const others = t.nodes.filter(n => node && n.id !== node.id && n.status !== 'abandoned')
+  const detail = node && (
+    <Box flexDirection="column" gap={1} borderStyle="round" padding={1}>
+      <Text bold>{`${node.id} · ${node.title}`}</Text>
+      <Text dimColor>
+        {`${LENS_LABEL[node.lens]} · ${STATUS_LABEL[node.status]}`}
+        {node.estimate ? ` · estimation ${node.estimate}` : ''}
+        {node.branch ? ` · branche ${node.branch}` : ''}
+        {node.parents.length ? ` · issu de ${node.parents.join(', ')}` : ''}
+      </Text>
+      {node.summary && <Text>{node.summary}</Text>}
+      {isExpanded && node.detail && <Markdown text={node.detail} />}
+      <Box flexDirection="row" flexWrap="wrap" gap={1}>
+        <Button key="act-detail" onPress={() => update($, expanded, x => !x)}>
+          {isExpanded ? 'Masquer le détail' : 'Voir le détail'}
+        </Button>
+        <Button key="act-validate" variant="primary" onPress={async () => {
+          await setStatus(node.id, 'validated')
+          await steer(`J'ai validé ${node.id} « ${node.title} ». Intègre ses résultats dans la branche principale de l'arbre (et du code si c'est pertinent), puis passe à la suite.`)
+        }}>Valider</Button>
+        <Button key="act-deeper" onPress={() => steer(`Approfondis ${node.id} « ${node.title} » (Profondeur) : méthodes et outils d'expert, données brutes, juge externe. Crée les sous-nœuds.`)}>
+          Approfondir
+        </Button>
+        <Button key="act-wider" onPress={() => steer(`Élargis ${node.id} « ${node.title} » (Étendue) : quelles autres disciplines ? Crée une piste par discipline utile.`)}>
+          Élargir
+        </Button>
+        <Button key="act-higher" onPress={() => steer(`Monte en altitude sur ${node.id} « ${node.title} » : quel est le but derrière ce but ? Propose la version durable.`)}>
+          Altitude
+        </Button>
+        <Button key="act-agent" onPress={() => steer(`Lance un sous-agent pour explorer ${node.id} « ${node.title} » (mets #${node.id} dans sa description).`)}>
+          Lancer un agent
+        </Button>
+        <Button key="act-abandon" onPress={async () => {
+          await setStatus(node.id, 'abandoned')
+          await steer(`J'abandonne la piste ${node.id} « ${node.title} ». Ne la poursuis pas.`)
+        }}>Abandonner</Button>
+      </Box>
+      {others.length > 0 && (
+        <Box flexDirection="column">
+          <Text dimColor>Fusionner dans :</Text>
+          <Box flexDirection="row" flexWrap="wrap" gap={1}>
+            {others.slice(0, 8).map(o => (
+              <Button key={`merge-${o.id}`} onPress={async () => {
+                await save($, merge(await read($, tree), [node.id], o.id, await nowIso($)))
+                await steer(`J'ai fusionné ${node.id} dans ${o.id} « ${o.title} ». Combine leurs résultats.`)
+              }}>{o.id}</Button>
+            ))}
+          </Box>
+        </Box>
+      )}
+    </Box>
+  )
+
+  return (
+    <Box flexDirection="column" gap={1}>
+      {tabs}
+      {header}
+      {graph}
+      {t.nodes.length === 0 && <Text dimColor>L'arbre se remplira dès que tu me confies une tâche.</Text>}
+      {detail}
+      {list}
+    </Box>
+  )
+}
+
 async function openPane($: $) {
   return $.ui.open({ id: PANE, title: 'Arbre de raisonnement' })
 }
@@ -119,7 +256,7 @@ export const register: Register = on => {
     await load($)
     await refreshGit($)
     await openPane($)
-    return { text: "Arbre de raisonnement ouvert. Agis sur les nœuds dans le panneau, ou guide-moi ici." }
+    return { text: 'Arbre de raisonnement : agis sur les nœuds ci-dessus, ou guide-moi ici.' }
   })
 
   on('prompt.compose', async ($, e, next) => {
@@ -186,140 +323,8 @@ export const register: Register = on => {
     return ran
   })
 
-  on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
-    const ui = $.ui.resolve(e) as any
-    const { Box, Text, Button, Markdown, Code } = ui
-    const t = await read($, tree)
-    const sel = await read($, selected)
-    const isExpanded = await read($, expanded)
-    const activeTab = await read($, tab)
-    const running = await read($, agents)
-    const p = progress(t)
-    const cur = current(t)
-    const node = t.nodes.find(n => n.id === sel)
+  on('ui.render', { component: 'Pane', requestId: PANE }, ($, e) => drawTree($, e))
 
-    const steer = async (text: string) => {
-      await $.prompt.submit({ text: `[arbre] ${text}` })
-    }
-    const setStatus = async (id: string, status: Status) =>
-      save($, upsert(await read($, tree), { id, status }, await nowIso($)).tree)
-
-    const tabs = (
-      <Box flexDirection="row" gap={1}>
-        <Button key="tab-tree" variant={activeTab === 'tree' ? 'primary' : undefined} onPress={() => update($, tab, () => 'tree' as Tab)}>
-          Raisonnement
-        </Button>
-        <Button key="tab-git" variant={activeTab === 'git' ? 'primary' : undefined} onPress={async () => { await refreshGit($); await update($, tab, () => 'git' as Tab) }}>
-          Branches Git
-        </Button>
-      </Box>
-    )
-
-    if (activeTab === 'git') {
-      const text = await read($, git)
-      return (
-        <Box flexDirection="column" gap={1}>
-          {tabs}
-          <Text bold>Branches, commits et fusions</Text>
-          <Code source={text || 'Chargement…'} language="text" />
-          <Button key="git-refresh" onPress={() => refreshGit($)}>Actualiser</Button>
-        </Box>
-      )
-    }
-
-    const header = (
-      <Box flexDirection="column">
-        <Text bold>{t.goal || "Pas encore d'objectif : décris ta tâche dans le chat."}</Text>
-        <Text dimColor>
-          {`Avancement ${p.finished}/${p.total} (${p.pct} %) · ${p.exploring} en exploration`}
-          {cur ? ` · tu es ici : ${cur.id} ${cur.title}` : ''}
-        </Text>
-        {running.length > 0 && <Text color="red">{`Sous-agents actifs : ${running.join(' · ')}`}</Text>}
-      </Box>
-    )
-
-    const svg = renderSvg(t, sel)
-    const graph = ui.Svg && t.nodes.length > 0
-      ? <ui.Svg source={svg.source} alt={outline(t)} width={svg.width} isInteractive />
-      : null
-
-    const list = (
-      <Box flexDirection="column">
-        {t.nodes.map(n => (
-          <Button
-            key={`node-${n.id}`}
-            plain
-            onPress={() => update($, selected, s => (s === n.id ? '' : n.id))}
-          >
-            {`${n.id === sel ? '▶ ' : ''}${n.id} ${n.title} `}
-            <Text dimColor>{`${LENS_LABEL[n.lens]} · ${STATUS_LABEL[n.status]}${n.estimate ? ` · ${n.estimate}` : ''}`}</Text>
-          </Button>
-        ))}
-      </Box>
-    )
-
-    const others = t.nodes.filter(n => node && n.id !== node.id && n.status !== 'abandoned')
-    const detail = node && (
-      <Box flexDirection="column" gap={1} borderStyle="round" padding={1}>
-        <Text bold>{`${node.id} · ${node.title}`}</Text>
-        <Text dimColor>
-          {`${LENS_LABEL[node.lens]} · ${STATUS_LABEL[node.status]}`}
-          {node.estimate ? ` · estimation ${node.estimate}` : ''}
-          {node.branch ? ` · branche ${node.branch}` : ''}
-          {node.parents.length ? ` · issu de ${node.parents.join(', ')}` : ''}
-        </Text>
-        {node.summary && <Text>{node.summary}</Text>}
-        {isExpanded && node.detail && <Markdown text={node.detail} />}
-        <Box flexDirection="row" flexWrap="wrap" gap={1}>
-          <Button key="act-detail" onPress={() => update($, expanded, x => !x)}>
-            {isExpanded ? 'Masquer le détail' : 'Voir le détail'}
-          </Button>
-          <Button key="act-validate" variant="primary" onPress={async () => {
-            await setStatus(node.id, 'validated')
-            await steer(`J'ai validé ${node.id} « ${node.title} ». Intègre ses résultats dans la branche principale de l'arbre (et du code si c'est pertinent), puis passe à la suite.`)
-          }}>Valider</Button>
-          <Button key="act-deeper" onPress={() => steer(`Approfondis ${node.id} « ${node.title} » (Profondeur) : méthodes et outils d'expert, données brutes, juge externe. Crée les sous-nœuds.`)}>
-            Approfondir
-          </Button>
-          <Button key="act-wider" onPress={() => steer(`Élargis ${node.id} « ${node.title} » (Étendue) : quelles autres disciplines ? Crée une piste par discipline utile.`)}>
-            Élargir
-          </Button>
-          <Button key="act-higher" onPress={() => steer(`Monte en altitude sur ${node.id} « ${node.title} » : quel est le but derrière ce but ? Propose la version durable.`)}>
-            Altitude
-          </Button>
-          <Button key="act-agent" onPress={() => steer(`Lance un sous-agent pour explorer ${node.id} « ${node.title} » (mets #${node.id} dans sa description).`)}>
-            Lancer un agent
-          </Button>
-          <Button key="act-abandon" onPress={async () => {
-            await setStatus(node.id, 'abandoned')
-            await steer(`J'abandonne la piste ${node.id} « ${node.title} ». Ne la poursuis pas.`)
-          }}>Abandonner</Button>
-        </Box>
-        {others.length > 0 && (
-          <Box flexDirection="column">
-            <Text dimColor>Fusionner dans :</Text>
-            <Box flexDirection="row" flexWrap="wrap" gap={1}>
-              {others.slice(0, 8).map(o => (
-                <Button key={`merge-${o.id}`} onPress={async () => {
-                  await save($, merge(await read($, tree), [node.id], o.id, await nowIso($)))
-                  await steer(`J'ai fusionné ${node.id} dans ${o.id} « ${o.title} ». Combine leurs résultats.`)
-                }}>{o.id}</Button>
-              ))}
-            </Box>
-          </Box>
-        )}
-      </Box>
-    )
-
-    return (
-      <Box flexDirection="column" gap={1}>
-        {tabs}
-        {header}
-        {graph}
-        {t.nodes.length === 0 && <Text dimColor>L'arbre se remplira dès que tu me confies une tâche.</Text>}
-        {detail}
-        {list}
-      </Box>
-    )
-  })
+  // L'app mobile ne place pas de panneau : /arbre dessine l'arbre dans le fil.
+  on('ui.render', { component: 'CommandOutput', props: { command: 'arbre' } }, ($, e) => drawTree($, e))
 }
