@@ -219,7 +219,7 @@
   ],
   "auto": {
     "on": true,
-    "turns": 5,
+    "turns": 7,
     "maxTurns": 40,
     "startedAt": "2026-10-18T21:55:08.518Z"
   },
