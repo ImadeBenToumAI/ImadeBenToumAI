@@ -105,10 +105,13 @@
       "summary": "tree_explore / tree_prune built and unit-tested (31 tests). Real end-to-end judge pending: the CSV-parse demo under n16 must run with 3 parallel explorers and the winner must beat the baseline on demo/bench.js.",
       "estimate": "3d",
       "id": "n7",
-      "status": "exploring",
+      "status": "done",
       "createdAt": "2026-10-18T21:14:02.883Z",
-      "updatedAt": "2026-10-18T22:10:54.432Z",
-      "startedAt": "2026-10-18T22:10:54.432Z"
+      "updatedAt": "2026-10-18T22:13:00.239Z",
+      "startedAt": "2026-10-18T22:10:54.432Z",
+      "detail": "## Tree search (Phase 5)\n\n- `tree_explore <parent>`: one subagent per proposed child track, in parallel, each in its own worktree branch, with the budget (agents × minutes) echoed before launch. Each agent is told to end with `NODE:` / `RESULT:` / `SCORE:` measured by the track's declared judge.\n- Scores land on the nodes as the agents finish (matched by agent id, or by the NODE line on hosts that do not name agents); the nodes move to *needs review*.\n- `tree_prune <parent>`: keeps the best-scored track, abandons the others with the reason. The panel ranks the tracks and offers *Prune weak* and *Merge best*.\n- Real run: demo/parse.js, baseline 334 ms. Shaped rows (7×) beat single pass (4-7×) and no-spread (3×). Merged: 44 ms on main.\n\nJudge: the independent benchmark on the merged code, and 31 tests.",
+      "verification": "End-to-end run on a real problem: tree_explore spawned 3 agents in their own worktree branches, each reported NODE/RESULT/SCORE through its judge, scores landed on the nodes automatically, tree_prune kept the best, the winner merged into the main branch benches at 7.38× (independent measurement); plus 31 unit tests",
+      "finishedAt": "2026-10-18T22:13:00.239Z"
     },
     {
       "title": "Publier et soumettre",
@@ -224,15 +227,19 @@
       "title": "Demo: CSV parse",
       "lens": "step",
       "parents": [
-        "n7"
+        "n7",
+        "n19"
       ],
-      "summary": "Real tree-search run: speed up demo/parse.js (baseline 334 ms on bench.js). Three tracks explored in parallel, scored by speedup; prune, merge the best.",
+      "summary": "Three explorers in parallel on demo/parse.js: no object spread (3×), single pass (4-7×), shaped rows (7×). Pruned to the shaped-rows track and merged it: 334 ms → 44 ms on the main checkout.",
       "estimate": "1h/2h/4h",
       "judge": "BASELINE_MS=334 node demo/bench.js <impl> → SCORE = speedup; wrong output scores 0",
       "id": "n16",
-      "status": "proposed",
+      "status": "done",
       "createdAt": "2026-10-18T22:10:54.450Z",
-      "updatedAt": "2026-10-18T22:10:54.450Z"
+      "updatedAt": "2026-10-18T22:12:53.443Z",
+      "verification": "Independent run of demo/bench.js on the main checkout after merging the winner: 334 ms → 44 ms, SCORE 7.38 (agents reported 3.15 / 6.66 / 7.3; my own runs 2.95 / 4.41 / 7.24, same ranking); correctness gate passes",
+      "branch": "ambiflex/n19-track-shaped-rows",
+      "finishedAt": "2026-10-18T22:12:53.443Z"
     },
     {
       "title": "Track: no object spread",
@@ -240,16 +247,16 @@
       "parents": [
         "n16"
       ],
-      "summary": "Replacing per-cell object spread with direct assignment (plus hoisted header trimming) cuts parse time from ~334 ms to ~105 ms while keeping split-based parsing.",
+      "summary": "Replacing per-cell object spread with direct assignment (plus hoisted header trimming) cuts parse time from ~334 ms to ~105 ms while keeping split-based parsing. Pruned: scored 3.15 against 7.3 for n19.",
       "estimate": "20min/30min/1h",
       "judge": "BASELINE_MS=334 node demo/bench.js demo/parse.js (run from the worktree)",
       "id": "n17",
-      "status": "review",
+      "status": "abandoned",
       "createdAt": "2026-10-18T22:10:58.177Z",
-      "updatedAt": "2026-10-18T22:11:57.502Z",
+      "updatedAt": "2026-10-18T22:12:43.776Z",
       "branch": "ambiflex/n17-track-no-object-spread",
       "agent": "",
-      "startedAt": "2026-10-18T22:11:14.815Z",
+      "startedAt": "2026-10-18T22:11:14.689Z",
       "score": 3.15
     },
     {
@@ -258,16 +265,17 @@
       "parents": [
         "n16"
       ],
-      "summary": "One pass over the text with indexOf, no split and no intermediate line array.",
+      "summary": "Single-pass indexOf parser passes the correctness gate and runs ~5-6x faster than the 334 ms baseline (best 50.1 ms). Pruned: scored 6.66 against 7.3 for n19.",
       "estimate": "30min/1h/2h",
       "judge": "BASELINE_MS=334 node demo/bench.js demo/parse.js (run from the worktree)",
       "id": "n18",
-      "status": "exploring",
+      "status": "abandoned",
       "createdAt": "2026-10-18T22:11:00.356Z",
-      "updatedAt": "2026-10-18T22:11:14.944Z",
+      "updatedAt": "2026-10-18T22:12:43.768Z",
       "branch": "ambiflex/n18-track-single-pass",
-      "agent": "a8791a8cadf4d09a4",
-      "startedAt": "2026-10-18T22:11:14.944Z"
+      "agent": "",
+      "startedAt": "2026-10-18T22:11:14.857Z",
+      "score": 6.66
     },
     {
       "title": "Track: shaped rows",
@@ -275,30 +283,32 @@
       "parents": [
         "n16"
       ],
-      "summary": "Pre-build a row constructor from the header so every row has the same hidden class; trim only when needed.",
+      "summary": "Header-built row factory with a single hidden class plus lazy trim cuts the parse from ~334ms to ~42ms, about 7–8x faster than baseline.",
       "estimate": "30min/1h/2h",
       "judge": "BASELINE_MS=334 node demo/bench.js demo/parse.js (run from the worktree)",
       "id": "n19",
-      "status": "exploring",
+      "status": "merged",
       "createdAt": "2026-10-18T22:11:02.537Z",
-      "updatedAt": "2026-10-18T22:11:15.087Z",
+      "updatedAt": "2026-10-18T22:12:49.747Z",
       "branch": "ambiflex/n19-track-shaped-rows",
-      "agent": "aaadba44e8b731bf2",
-      "startedAt": "2026-10-18T22:11:15.087Z"
+      "agent": "",
+      "startedAt": "2026-10-18T22:11:14.999Z",
+      "score": 7.3,
+      "finishedAt": "2026-10-18T22:12:49.747Z"
     }
   ],
   "auto": {
     "on": true,
-    "turns": 12,
+    "turns": 14,
     "maxTurns": 40,
     "startedAt": "2026-10-18T21:55:08.518Z"
   },
   "cost": {
-    "spentUsd": 35.74,
-    "sessionUsd": 35.74,
+    "spentUsd": 42.69,
+    "sessionUsd": 42.69,
     "ratePerHour": 30,
     "assumedRate": true,
-    "estimateUsd": 15600,
+    "estimateUsd": 472.39,
     "model": "claude-fable-5-1",
     "rateLimits": [
       {

@@ -64,7 +64,7 @@ See the table above. Judge: `claude plugin validate` and `claude plugin test` gr
 3. "Validate" on a node with a PR: Claude proposes the merge; it merges only with your confirmation.
 4. **Judge:** a test with a temporary Git repository: branch creation, commit, the view links the node to the commit.
 
-### Phase 5: tree search (n7): 2 / 3 / 5 d
+### Phase 5: tree search (n7): 2 / 3 / 5 d. Done in v0.3: a real run on demo/parse.js (3 agents, scores 3× / 4-7× / 7×, winner merged at 7.4×).
 1. "Explore N tracks": the plugin spawns N subagents in parallel (`$.agent.spawn`), one per track, each in its branch.
 2. Each track gets a score, measured by the judge the track declared (test, benchmark, metric).
 3. The panel ranks the tracks. "Prune" abandons the weakest and records the reason. "Merge the best" brings the winner back.
