@@ -114,19 +114,20 @@
       "finishedAt": "2026-10-18T22:13:00.239Z"
     },
     {
-      "title": "Publier et soumettre",
+      "title": "Publish and submit",
       "lens": "step",
       "parents": [
         "n5",
         "n6",
         "n7"
       ],
-      "summary": "Dépôt dédié, installation à l'échelle utilisateur, dossier pour le répertoire officiel des plugins.",
+      "summary": "Standalone repository prepared locally (marketplace, MIT licence, submission notes, 31 tests green). Blocked on the user creating github.com/ImadeBenToumAI/ambiflex (public, empty): the session's GitHub credential cannot create repositories.",
       "estimate": "1d",
       "id": "n8",
-      "status": "proposed",
+      "status": "exploring",
       "createdAt": "2026-10-18T21:14:04.181Z",
-      "updatedAt": "2026-10-18T21:14:04.181Z"
+      "updatedAt": "2026-10-18T22:26:18.659Z",
+      "startedAt": "2026-10-18T22:26:18.659Z"
     },
     {
       "title": "Adoption strategy",
@@ -156,17 +157,18 @@
       "updatedAt": "2026-10-18T22:02:18.114Z"
     },
     {
-      "title": "Contenu > plugin",
+      "title": "Content over plugin",
       "lens": "depth",
       "parents": [
         "n9"
       ],
-      "summary": "Ce que font les gens remarqués : ils publient leurs apprentissages, pas leur outil. Une série d'articles « ce que j'ai appris en pilotant des agents » avec données.",
+      "summary": "Four articles, one a week, each with a verifiable number. Drafts 1 (\"Done means nothing when an agent says it\") and 4 (plugin API field notes) written from the session's real data; 2 (calibration) and 3 (tree search) next. The user edits and signs.",
       "estimate": "4w",
       "id": "n11",
-      "status": "proposed",
+      "status": "exploring",
       "createdAt": "2026-10-18T21:20:11.140Z",
-      "updatedAt": "2026-10-18T21:20:11.140Z"
+      "updatedAt": "2026-10-18T22:26:18.644Z",
+      "startedAt": "2026-10-18T22:26:18.644Z"
     },
     {
       "title": "Distribution",
