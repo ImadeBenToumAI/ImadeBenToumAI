@@ -268,8 +268,9 @@ export function eta(tree: Tree): { critical: number; remaining: number; path: st
 /** Actual minutes spent on finished nodes vs. their estimates: a calibration factor (1 = on time, 2 = twice as long). */
 /**
  * Median of actual / estimated over finished nodes. Only nodes the plugin timed count: at least 2
- * minutes of work on an estimate of at least 30 minutes, and a ratio within [0.05, 20]; anything
- * else is a hand-set timestamp or a placeholder, not a measurement.
+ * minutes of work on an estimate of at least 30 minutes, and a ratio within [0.002, 20]. Estimates
+ * are usually written in human effort while an agent finishes a "2d" node in minutes, so very low
+ * ratios are real; what the floor rejects is a timestamp set by hand seconds apart.
  */
 export function calibration(tree: Tree): { factor: number; samples: number } {
   const pairs = tree.nodes
@@ -277,7 +278,7 @@ export function calibration(tree: Tree): { factor: number; samples: number } {
     .map(n => ({ actual: (Date.parse(n.finishedAt!) - Date.parse(n.startedAt!)) / 60000, est: minutes(n.estimate) }))
     .filter(p => Number.isFinite(p.actual) && p.actual >= 2)
     .map(p => p.actual / p.est)
-    .filter(r => r >= 0.05 && r <= 20)
+    .filter(r => r >= 0.002 && r <= 20)
     .sort((a, b) => a - b)
   if (pairs.length === 0) return { factor: 1, samples: 0 }
   return { factor: +pairs[Math.floor(pairs.length / 2)]!.toFixed(2), samples: pairs.length }

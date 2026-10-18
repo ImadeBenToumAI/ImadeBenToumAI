@@ -244,9 +244,12 @@
       "estimate": "20min/30min/1h",
       "judge": "BASELINE_MS=334 node demo/bench.js demo/parse.js (run from the worktree)",
       "id": "n17",
-      "status": "proposed",
+      "status": "exploring",
       "createdAt": "2026-10-18T22:10:58.177Z",
-      "updatedAt": "2026-10-18T22:10:58.177Z"
+      "updatedAt": "2026-10-18T22:11:14.815Z",
+      "branch": "ambiflex/n17-track-no-object-spread",
+      "agent": "ab918b559dcc45563",
+      "startedAt": "2026-10-18T22:11:14.815Z"
     },
     {
       "title": "Track: single pass",
@@ -258,9 +261,12 @@
       "estimate": "30min/1h/2h",
       "judge": "BASELINE_MS=334 node demo/bench.js demo/parse.js (run from the worktree)",
       "id": "n18",
-      "status": "proposed",
+      "status": "exploring",
       "createdAt": "2026-10-18T22:11:00.356Z",
-      "updatedAt": "2026-10-18T22:11:00.356Z"
+      "updatedAt": "2026-10-18T22:11:14.944Z",
+      "branch": "ambiflex/n18-track-single-pass",
+      "agent": "a8791a8cadf4d09a4",
+      "startedAt": "2026-10-18T22:11:14.944Z"
     },
     {
       "title": "Track: shaped rows",
@@ -272,9 +278,12 @@
       "estimate": "30min/1h/2h",
       "judge": "BASELINE_MS=334 node demo/bench.js demo/parse.js (run from the worktree)",
       "id": "n19",
-      "status": "proposed",
+      "status": "exploring",
       "createdAt": "2026-10-18T22:11:02.537Z",
-      "updatedAt": "2026-10-18T22:11:02.537Z"
+      "updatedAt": "2026-10-18T22:11:15.087Z",
+      "branch": "ambiflex/n19-track-shaped-rows",
+      "agent": "aaadba44e8b731bf2",
+      "startedAt": "2026-10-18T22:11:15.087Z"
     }
   ],
   "auto": {

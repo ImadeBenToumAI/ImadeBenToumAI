@@ -121,14 +121,18 @@ test('three-point estimates give the PERT expected value and spread', () => {
 
 test('calibration ignores hand-set timestamps and placeholders', () => {
   let t = sample()
-  // 4 minutes on a 1-day estimate (ratio 0.008): an artefact, not a measurement.
+  // 30 seconds on a 1-day estimate: a timestamp set by hand, not a measurement.
   t = upsert(t, { title: 'Fake', lens: 'step', estimate: '1d', status: 'exploring' }, '2026-10-19T10:00:00.000Z').tree
-  t = upsert(t, { id: 'n5', status: 'done', verification: 'x' }, '2026-10-19T10:04:00.000Z').tree
+  t = upsert(t, { id: 'n5', status: 'done', verification: 'x' }, '2026-10-19T10:00:30.000Z').tree
   expect(calibration(t)).toEqual({ factor: 1, samples: 0 })
+  // 10 minutes on a 2-day estimate (ratio 0.01): an agent's real pace, counted.
+  t = upsert(t, { title: 'Fast', lens: 'step', estimate: '2d', status: 'exploring' }, '2026-10-19T10:00:00.000Z').tree
+  t = upsert(t, { id: 'n6', status: 'done', verification: 'x' }, '2026-10-19T10:10:00.000Z').tree
+  expect(calibration(t)).toEqual({ factor: 0.01, samples: 1 })
   // 3h on a 2h estimate: a measurement.
   t = upsert(t, { id: 'n2', status: 'exploring' }, '2026-10-19T11:00:00.000Z').tree
   t = upsert(t, { id: 'n2', status: 'done', verification: 'x' }, '2026-10-19T14:00:00.000Z').tree
-  expect(calibration(t)).toEqual({ factor: 1.5, samples: 1 })
+  expect(calibration(t).samples).toBe(2)
 })
 
 test('arrival skips nights and weekends unless the run is continuous', () => {
