@@ -303,16 +303,16 @@
   ],
   "auto": {
     "on": true,
-    "turns": 18,
+    "turns": 19,
     "maxTurns": 40,
     "startedAt": "2026-10-18T21:55:08.518Z"
   },
   "cost": {
-    "spentUsd": 48.14,
-    "sessionUsd": 48.14,
-    "ratePerHour": 20.28,
+    "spentUsd": 50.78,
+    "sessionUsd": 50.78,
+    "ratePerHour": 22.45,
     "assumedRate": false,
-    "estimateUsd": 301.8,
+    "estimateUsd": 328.63,
     "model": "claude-fable-5-1",
     "rateLimits": [
       {
