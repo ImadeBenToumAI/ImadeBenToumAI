@@ -1,0 +1,14 @@
+{
+  "name": "imade",
+  "owner": {
+    "name": "ImadeBenToumAI"
+  },
+  "plugins": [
+    {
+      "name": "ambition-tree",
+      "source": "./plugins/ambition-tree",
+      "description": "Arbre de raisonnement visuel et pilotable (be-ambitious : Altitude, Profondeur, Étendue) + vue des branches Git."
+    }
+  ],
+  "description": "Plugins Claude Code d'Imade : raisonnement ambitieux et visuel."
+}
