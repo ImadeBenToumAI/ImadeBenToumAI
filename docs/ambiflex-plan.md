@@ -35,7 +35,7 @@ Disciplines whose real methods are borrowed, not just their vocabulary:
 | D6 | **Free-text estimates** could not be summed or compared with reality. | Medium | Parsed estimates (`30min`, `2h`, `3d`, `1w`), real time measured between `exploring` and `done`, calibration factor. Three-point estimates remain for Phase 3. | Partly fixed |
 | D7 | **The panel opened at every session**, task or not. | Low | Opens on the first `tree_set_goal`, when the tree already has nodes, or with `/ambiflex`. | Fixed in v0.2 |
 | D8 | **The graph overflows on mobile**: no zoom, one column per level. | Low | The claude.ai page has pan, pinch zoom and barycentric ordering. The inline drawing still shows the full graph. | Partly fixed |
-| D9 | **Location.** The plugin lives in the GitHub **profile** repository, unfit for an official submission; `.claude/settings.json` only enables it there. | Medium | Dedicated repository `ImadeBenToumAI/ambiflex`; user-scope install on every machine. | Open |
+| D9 | **Location.** The plugin lives in the GitHub **profile** repository, unfit for an official submission; `.claude/settings.json` only enables it there. | Medium | Dedicated repository `ImadeBenToumAI/ambiflex`; user-scope install on every machine. | Deferred to launch day (user's choice); user-scope install works from the profile repository |
 | D10 | **Incomplete tests**: nothing on agent hooks, merges from the panel, Git tab, or security (D1). | Medium | One test per fix above, written before the fix. | Fixed in v0.2 (17 tests) |
 
 ## 4. Execution plan
@@ -71,7 +71,7 @@ See the table above. Judge: `claude plugin validate` and `claude plugin test` gr
 4. Guard rail: a budget (agents, duration) is shown and confirmed before launch.
 5. **Judge:** an end-to-end scenario on a small real problem, e.g. speeding up a slow function with 3 tracks. The winner's score is really better, measured by a benchmark.
 
-### Phase 6: publication (n8): 0.5 / 1 / 2 d
+### Phase 6: publication (n8): 0.5 / 1 / 2 d. Done for v0.3 from the profile repository (user-scope install verified from an empty environment; submission notes in `ambiflex-submission.md`); the dedicated repository waits for launch day.
 1. Dedicated repository `ambiflex`, with its own `marketplace.json`, an MIT licence, an English README, screenshots of the panel on mobile and desktop.
 2. User-scope install on every machine (one line). Clean the profile repository.
 3. Submission file for the official plugin directory: description, security (no network, local data only), tests, limits. The API is in early access: check the criteria in force when submitting.

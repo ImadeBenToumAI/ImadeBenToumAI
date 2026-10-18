@@ -121,13 +121,15 @@
         "n6",
         "n7"
       ],
-      "summary": "Standalone repository prepared locally (marketplace, MIT licence, submission notes, 31 tests green). Blocked on the user creating github.com/ImadeBenToumAI/ambiflex (public, empty): the session's GitHub credential cannot create repositories.",
+      "summary": "Published from the profile repository (marketplace \"imade\"); user-scope install verified from an empty environment. Submission notes in docs/ambiflex-submission.md. The dedicated repository is deferred to launch day (user's choice: needs a repo created by hand).",
       "estimate": "1d",
       "id": "n8",
-      "status": "exploring",
+      "status": "done",
       "createdAt": "2026-10-18T21:14:04.181Z",
-      "updatedAt": "2026-10-18T22:26:18.659Z",
-      "startedAt": "2026-10-18T22:26:18.659Z"
+      "updatedAt": "2026-10-18T22:31:59.807Z",
+      "startedAt": "2026-10-18T22:26:18.659Z",
+      "verification": "Fresh-HOME install from the README command: `claude plugin marketplace add ImadeBenToumAI/ImadeBenToumAI` then `claude plugin install ambiflex@imade` succeeds; `claude plugin list` shows ambiflex@imade at user scope",
+      "finishedAt": "2026-10-18T22:31:59.807Z"
     },
     {
       "title": "Adoption strategy",
@@ -301,16 +303,16 @@
   ],
   "auto": {
     "on": true,
-    "turns": 17,
+    "turns": 18,
     "maxTurns": 40,
     "startedAt": "2026-10-18T21:55:08.518Z"
   },
   "cost": {
-    "spentUsd": 47.27,
-    "sessionUsd": 47.27,
-    "ratePerHour": 20.64,
+    "spentUsd": 48.14,
+    "sessionUsd": 48.14,
+    "ratePerHour": 20.28,
     "assumedRate": false,
-    "estimateUsd": 307.19,
+    "estimateUsd": 301.8,
     "model": "claude-fable-5-1",
     "rateLimits": [
       {
