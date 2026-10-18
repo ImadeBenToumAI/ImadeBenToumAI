@@ -11,7 +11,11 @@ import {
 
 const PLUGIN = 'ambiflex'
 const PANE = 'ambiflex'
-const FILE = '.ambiflex/tree.json'
+// Paths are anchored at the session's project root: a shell `cd` must never move the tree.
+let root = ''
+const FILE = () => `${root}.ambiflex/tree.json`
+const LOG = () => `${root}${LOG_FILE}`
+const ATTRS = () => `${root}.ambiflex/.gitattributes`
 const ARTIFACT_FILE = '.ambiflex/artifact.json'
 
 const tree = atom({ plugin: 'ambiflex', key: 'tree' } as const, emptyTree())
@@ -31,7 +35,7 @@ For every task, apply Felix Rieseberg's be-ambitious method and record your reas
 5. Messages starting with [tree] come from the user's panel or page: do what they ask and update the tree.
 6. If a Git branch serves a node, fill in branch.
 7. Auto mode: when the tree says auto mode is ON, you are executing the plan without asking for approval. Work on the node the prompt names, verify it with an external judge, set done with its verification, and stop the turn. The plugin starts the next node by itself. Ask the user only when a node cannot be completed without a decision that is theirs (money, access, publishing to the outside).
-8. Mobile page: if ${ARTIFACT_FILE} exists it holds the URL of the "Ambiflex" claude.ai page. After each tree change, sync it: ArtifactData set, collection "tree", doc "current", file_path "${FILE}" (read the doc first and pass its version as if_version). Actions from that page arrive as artifact comments starting with [tree]: do them, update the tree, reply on the thread (ArtifactComments reply) and resolve it.
+8. Mobile page: if ${ARTIFACT_FILE} exists it holds the URL of the "Ambiflex" claude.ai page. After each tree change, sync it: ArtifactData set, collection "tree", doc "current", file_path ".ambiflex/tree.json" (read the doc first and pass its version as if_version). Actions from that page arrive as artifact comments starting with [tree]: do them, update the tree, reply on the thread (ArtifactComments reply) and resolve it.
 Keep the tree readable: short titles (under 24 characters), long text in detail.`
 
 const NODE_SCHEMA = {
@@ -60,30 +64,32 @@ let sessionId = 'local'
  */
 async function load($: $) {
   sessionId = (await $.session.id().catch(() => 'local')).slice(-6)
-  const hasLog = await $.fs.exists(LOG_FILE).catch(() => false)
+  const r = await $.session.root().catch(() => '')
+  root = r ? `${r.replace(/\/$/, '')}/` : ''
+  const hasLog = await $.fs.exists(LOG()).catch(() => false)
   if (hasLog) {
-    const text = await $.fs.read(LOG_FILE).catch(() => undefined)
+    const text = await $.fs.read(LOG()).catch(() => undefined)
     const replayed = replay(parseLog(typeof text === 'string' ? text : undefined))
     // Cost is not logged: carry it over from the snapshot.
-    const snap = await $.fs.exists(FILE).catch(() => false) ? parseTree(await $.fs.read(FILE).catch(() => undefined) as string | undefined) : undefined
+    const snap = await $.fs.exists(FILE()).catch(() => false) ? parseTree(await $.fs.read(FILE()).catch(() => undefined) as string | undefined) : undefined
     await update($, tree, () => ({ ...replayed, cost: snap?.cost ?? replayed.cost }))
     return
   }
-  const exists = await $.fs.exists(FILE).catch(() => false)
-  const text = exists ? await $.fs.read(FILE).catch(() => undefined) : undefined
+  const exists = await $.fs.exists(FILE()).catch(() => false)
+  const text = exists ? await $.fs.read(FILE()).catch(() => undefined) : undefined
   const parsed = parseTree(typeof text === 'string' ? text : undefined)
   await update($, tree, () => parsed)
   if (parsed.nodes.length || parsed.goal) {
     // One-time migration of a whole-file tree.json into the log.
-    await $.fs.write(LOG_FILE, serialize(eventsFromSnapshot(parsed, sessionId))).catch(() => undefined)
-    await $.fs.write('.ambiflex/.gitattributes', 'log.jsonl merge=union\n').catch(() => undefined)
+    await $.fs.write(LOG(), serialize(eventsFromSnapshot(parsed, sessionId))).catch(() => undefined)
+    await $.fs.write(ATTRS(), 'log.jsonl merge=union\n').catch(() => undefined)
   }
 }
 
 /** Writes the snapshot only (cost, agents): nothing a replay needs. */
 async function save($: $, next: Tree) {
   await update($, tree, () => next)
-  await $.fs.write(FILE, `${JSON.stringify(next, null, 2)}\n`)
+  await $.fs.write(FILE(), `${JSON.stringify(next, null, 2)}\n`)
 }
 
 /** Applies one event to the live tree, appends it to the log, and refreshes the snapshot. */
@@ -91,10 +97,10 @@ async function commit($: $, event: Omit<Event, 't' | 's'>): Promise<Tree> {
   const t = await read($, tree)
   const full = { ...event, t: await nowIso($), s: sessionId } as Event
   const applied = applyOn(t, full)
-  const had = await $.fs.exists(LOG_FILE).catch(() => false)
-  const prior = had ? (await $.fs.read(LOG_FILE).catch(() => '')) as string : ''
-  await $.fs.write(LOG_FILE, `${prior}${prior && !prior.endsWith('\n') ? '\n' : ''}${JSON.stringify(full)}\n`)
-  if (!had) await $.fs.write('.ambiflex/.gitattributes', 'log.jsonl merge=union\n').catch(() => undefined)
+  const had = await $.fs.exists(LOG()).catch(() => false)
+  const prior = had ? (await $.fs.read(LOG()).catch(() => '')) as string : ''
+  await $.fs.write(LOG(), `${prior}${prior && !prior.endsWith('\n') ? '\n' : ''}${JSON.stringify(full)}\n`)
+  if (!had) await $.fs.write(ATTRS(), 'log.jsonl merge=union\n').catch(() => undefined)
   await save($, applied)
   return applied
 }

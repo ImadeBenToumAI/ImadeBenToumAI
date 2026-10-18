@@ -7,6 +7,7 @@ const bottoms = (on: any, toasts: string[] = [], disk = new Map<string, string>(
   on('fs.read', async (_$: any, e: any) => ({ value: disk.get(e.path) ?? '' }))
   on('fs.write', async (_$: any, e: any) => { disk.set(e.path, e.text); return { value: undefined } })
   on('session.id', async () => ({ value: 'session_test' }))
+  on('session.root', async () => ({ value: '' }))
   on('ui.toast', async (_$: any, e: any) => { toasts.push(e.text); return { value: undefined } })
   on('ui.status', async () => ({ value: undefined }))
   on('ui.open', async () => ({ value: { isPlaced: false, reason: 'no-surface' } }))

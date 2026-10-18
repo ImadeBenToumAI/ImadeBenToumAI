@@ -35,3 +35,7 @@
 {"kind":"upsert","input":{"id":"n5","title":"Calibrated estimates","summary":"Three-point estimates (o/p/pess), critical path (done), arrival date in the header, calibration factor applied to new estimates (measured; the ×0.03 artefact from hand-set timestamps must be excluded)."},"isNew":false,"t":"2026-10-18T22:01:10.561Z","s":"f8dcc0"}
 {"kind":"upsert","input":{"id":"n6","title":"Nodes ↔ branches ↔ PR","summary":"One track = one branch or worktree; a node shows its commits and PR; \"Validate\" on a node with a PR proposes the merge (never merges alone)."},"isNew":false,"t":"2026-10-18T22:01:10.577Z","s":"f8dcc0"}
 {"kind":"auto","on":true,"turns":3,"t":"2026-10-18T22:01:41.080Z","s":"f8dcc0"}
+{"kind":"auto","on":true,"turns":4,"t":"2026-10-18T22:02:34.152Z","s":"f8dcc0"}
+{"kind":"auto","on":true,"turns":5,"t":"2026-10-18T22:02:34.487Z","s":"f8dcc0"}
+{"kind":"upsert","input":{"id":"n9","title":"Adoption strategy","summary":"Umbrella for n10-n15: settled when its children are. The plugin now treats goal nodes as umbrellas (their children are workable while they stay open) and works the plan in the order it was written."},"isNew":false,"t":"2026-10-18T22:02:16.531Z","s":"f8dcc0"}
+{"kind":"upsert","input":{"id":"n10","title":"Proof before promo","parents":["n9","n5"],"summary":"No launch without a real measured demo: a project run with 3 tracks in parallel, estimated vs actual time, a 60-second video. Needs calibrated estimates (n5) first."},"isNew":false,"t":"2026-10-18T22:02:18.114Z","s":"f8dcc0"}
