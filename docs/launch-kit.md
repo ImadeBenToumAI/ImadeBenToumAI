@@ -2,24 +2,33 @@
 
 Everything launch day needs, ready to paste. Drafted by Claude from the session's real data; Imade edits, signs and posts. Nothing here is published by the plugin or by Claude.
 
-## 1. The 60-second video (node n10)
+## 1. The 75-second film (node n10)
 
-**Rendered, ready to post:** `assets/launch/ambiflex-portrait.mp4` (1080×1920, X / LinkedIn / Shorts) and `assets/launch/ambiflex-landscape.mp4` (1920×1080, HN / YouTube), plus one still per shot (`assets/launch/0N-*.png`) for posts and the README. Re-render after a tree change with `node tools/launch-video/record.js portrait|landscape` (needs Playwright's Chromium and ffmpeg; the page it records embeds `.ambiflex/tree.json`).
+**Rendered, ready to post:** `assets/launch/ambiflex-desktop.mp4` (1920×1080, dark mode, no captions: the voiced master) and `assets/launch/ambiflex-desktop-subtitled.mp4` (same cut with the subtitles burned in, for muted autoplay on X and LinkedIn), plus `assets/launch/ambiflex-desktop.srt` and one still per shot (`assets/launch/0N-*.png`) for posts and the README.
 
-Shot list, as rendered (captions only, no voice-over):
+**Voice (the one step left):** the narration script, cue by cue with timecodes, is `docs/launch-video-script.md`. Generate one English audio file from it (ElevenLabs, OpenAI TTS, or Codex with a TTS tool), save it as `assets/launch/narration.mp3`, then run:
 
-| # | Seconds | What is on screen | Caption |
+```
+node tools/launch-video/mux.js
+```
+
+It writes `assets/launch/ambiflex-desktop-voiced.mp4`: the picture is the clock, the voice is padded or cut to it. Post the voiced file on YouTube and HN, the subtitled one on X and LinkedIn.
+
+Re-render after a tree change with `NODE_PATH=<playwright> node tools/launch-video/record-desktop.js <outDir> [--burn]` (Playwright's Chromium and ffmpeg; the page it records embeds `.ambiflex/tree.json`), then encode the `.webm` with `ffmpeg -i … -c:v libx264 -crf 20 -pix_fmt yuv420p`.
+
+Shot list, as rendered:
+
+| # | Seconds | What is on screen | Subtitle |
 |---|---|---|---|
-| 1 | 0-5 | The tree, top-down, 19 nodes. Goal at the top. | "This is a plan Claude Code is executing on its own." |
-| 2 | 5-12 | Tap n7 "Tree search". The sheet opens: summary, verification, buttons. | "Every node needs a proof before it counts as done." |
-| 3 | 12-20 | Tap n16 "Demo: CSV parse". Scroll to *Tracks by score*: n19 7.3, n18 6.66, n17 3.15. | "Three agents tried three ideas in parallel. Same benchmark." |
-| 4 | 20-28 | Terminal: `BASELINE_MS=334 node demo/bench.js` → `ms: 44.0 / SCORE: 7.38`. | "I ran the benchmark myself. 334 ms → 44 ms." |
-| 5 | 28-36 | Header: progress 59 %, ETA, *Expected end*, cost line "$48 spent · est. $300 to finish · five_hour 2 %". | "Cost and ETA, before and during. Not after." |
-| 6 | 36-44 | Tap n11, press **Validate**. Toast "Sent to Claude". | "I steer from my phone. Claude replies in the session." |
-| 7 | 44-52 | Terminal: the plugin's hand-over line "[tree] Auto mode, turn 14/40. Work on n7…" | "After each turn, the plugin hands Claude the next node. No approval needed." |
-| 8 | 52-60 | README install line. | "`/plugin install ambiflex --marketplace ImadeBenToumAI/ImadeBenToumAI`. Felix Rieseberg's method, as a panel." |
-
-Recording tips: light theme, 1080×1920 for the phone cut, hide notifications, pause one second on each caption. Export a 1920×1080 version for X and HN (the tree is wider than tall on desktop).
+| 1 | 0-7 | The whole tree, top-down, 19 nodes, slow push-in. | "This is a plan Claude Code executed on its own. Nineteen nodes. One evening." |
+| 2 | 7-15 | Zoom on the goal and the three colour-coded tracks. | "It follows Felix Rieseberg's method: altitude, depth, range." |
+| 3 | 15-24 | n7 opens; the verification line is highlighted. | "A node is not done because the model says so. It needs a proof. Only I can validate." |
+| 4 | 24-34 | n16 opens: three tracks, three scores. | "Three agents, three ways to speed up a parser, each in its own branch, scored by the same benchmark." |
+| 5 | 34-42 | Terminal: the benchmark typed live, `SCORE: 7.38`. | "Then I ran the benchmark myself. 334 ms down to 44." |
+| 6 | 42-50 | Header highlighted: spent, estimate to finish, ETA, windows. | "Cost and time on screen before and during. Estimates calibrated against real timings." |
+| 7 | 50-58 | Terminal: the plugin's hand-over line. | "In auto mode, after each turn, the plugin hands Claude the next open node." |
+| 8 | 58-66 | n11 opens, Validate pressed, toast "Sent to Claude". | "And I steer from anywhere. Validate, go deeper, go wider, prune." |
+| 9 | 66-75 | Title card, install line. | "Ambiflex. Open source, one line to install." |
 
 ## 2. Reply to Felix Rieseberg's tutorial on X (node n12, first)
 
