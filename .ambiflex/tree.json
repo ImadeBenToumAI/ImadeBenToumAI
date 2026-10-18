@@ -240,16 +240,17 @@
       "parents": [
         "n16"
       ],
-      "summary": "Build each row by assignment instead of spreading a new object per cell; keep split-based parsing.",
+      "summary": "Replacing per-cell object spread with direct assignment (plus hoisted header trimming) cuts parse time from ~334 ms to ~105 ms while keeping split-based parsing.",
       "estimate": "20min/30min/1h",
       "judge": "BASELINE_MS=334 node demo/bench.js demo/parse.js (run from the worktree)",
       "id": "n17",
-      "status": "exploring",
+      "status": "review",
       "createdAt": "2026-10-18T22:10:58.177Z",
-      "updatedAt": "2026-10-18T22:11:14.815Z",
+      "updatedAt": "2026-10-18T22:11:57.502Z",
       "branch": "ambiflex/n17-track-no-object-spread",
-      "agent": "ab918b559dcc45563",
-      "startedAt": "2026-10-18T22:11:14.815Z"
+      "agent": "",
+      "startedAt": "2026-10-18T22:11:14.815Z",
+      "score": 3.15
     },
     {
       "title": "Track: single pass",

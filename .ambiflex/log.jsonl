@@ -65,3 +65,4 @@
 {"kind":"upsert","input":{"id":"n19","status":"exploring","agent":"Explore n19 #n19"},"t":"2026-10-18T22:11:14.999Z","s":"f8dcc0"}
 {"kind":"upsert","input":{"id":"n19","status":"review","agent":""},"t":"2026-10-18T22:11:15.079Z","s":"f8dcc0"}
 {"kind":"upsert","input":{"id":"n19","status":"exploring","agent":"aaadba44e8b731bf2"},"t":"2026-10-18T22:11:15.087Z","s":"f8dcc0"}
+{"kind":"upsert","input":{"id":"n17","status":"review","agent":"","score":3.15,"summary":"Replacing per-cell object spread with direct assignment (plus hoisted header trimming) cuts parse time from ~334 ms to ~105 ms while keeping split-based parsing."},"t":"2026-10-18T22:11:57.502Z","s":"f8dcc0"}
