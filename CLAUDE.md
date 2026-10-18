@@ -1,3 +1,3 @@
-# Instructions pour Claude
+# Instructions for Claude
 
-Avant chaque tâche, applique la skill `.claude/skills/be-ambitious/SKILL.md` (Altitude, Profondeur, Étendue — méthode de Felix Rieseberg).
+Before every task, apply the skill `.claude/skills/be-ambitious/SKILL.md` (Altitude, Depth, Range: Felix Rieseberg's method) and keep the reasoning tree up to date through the `ambiflex` plugin tools.

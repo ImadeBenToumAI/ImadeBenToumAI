@@ -1,0 +1,213 @@
+{
+  "version": 1,
+  "goal": "Faire d'ambition-tree le plugin Claude Code de référence pour piloter des agents, assez remarqué pour qu'Anthropic s'y intéresse",
+  "nodes": [
+    {
+      "title": "v0.1 livrée",
+      "lens": "goal",
+      "status": "done",
+      "summary": "Panneau, graphe SVG, actions, outils, onglet Git. 9 tests passent.",
+      "id": "n1",
+      "parents": [],
+      "createdAt": "2026-10-18T21:13:54.189Z",
+      "updatedAt": "2026-10-18T21:13:54.189Z"
+    },
+    {
+      "title": "Corriger la v0.1",
+      "lens": "depth",
+      "parents": [
+        "n1"
+      ],
+      "summary": "Fixed in v0.2: prompt injection via tree.json, done without proof, homonymous agents, prompt cache, panel at every session, tests.",
+      "estimate": "1d",
+      "id": "n2",
+      "status": "done",
+      "createdAt": "2026-10-18T21:13:55.539Z",
+      "updatedAt": "2026-10-18T21:44:32.001088Z",
+      "verification": "claude plugin validate + 17 tests green (v0.2)",
+      "startedAt": "2026-10-18T21:30:00.000Z",
+      "finishedAt": "2026-10-18T21:44:32.001088Z"
+    },
+    {
+      "title": "Nœuds vérifiables",
+      "lens": "depth",
+      "parents": [
+        "n2"
+      ],
+      "summary": "Done in v0.2: \"done\" requires a verification, otherwise the node stays at \"needs review\".",
+      "estimate": "1d",
+      "id": "n3",
+      "status": "done",
+      "createdAt": "2026-10-18T21:13:56.986Z",
+      "updatedAt": "2026-10-18T21:44:32.001088Z",
+      "verification": "claude plugin validate + 17 tests green (v0.2)",
+      "startedAt": "2026-10-18T21:30:00.000Z",
+      "finishedAt": "2026-10-18T21:44:32.001088Z"
+    },
+    {
+      "title": "Journal d'événements",
+      "lens": "altitude",
+      "parents": [
+        "n2"
+      ],
+      "summary": "Remplacer tree.json par un journal append-only fusionnable par Git : historique complet, plusieurs sessions, passé et futur.",
+      "estimate": "2d",
+      "id": "n4",
+      "status": "proposed",
+      "createdAt": "2026-10-18T21:13:58.485Z",
+      "updatedAt": "2026-10-18T21:13:58.485Z"
+    },
+    {
+      "title": "Calibrer les estimations",
+      "lens": "altitude",
+      "parents": [
+        "n4"
+      ],
+      "summary": "Comparer estimé et réel, puis corriger les prochaines estimations (PERT + chemin critique = date d'arrivée).",
+      "estimate": "2d",
+      "id": "n5",
+      "status": "proposed",
+      "createdAt": "2026-10-18T21:13:59.938Z",
+      "updatedAt": "2026-10-18T21:13:59.938Z"
+    },
+    {
+      "title": "Nœuds ↔ branches ↔ PR",
+      "lens": "range",
+      "parents": [
+        "n4"
+      ],
+      "summary": "Une piste = une branche ou un worktree ; Valider = fusionner la PR. Le raisonnement et le code avancent ensemble.",
+      "estimate": "2d",
+      "id": "n6",
+      "status": "proposed",
+      "createdAt": "2026-10-18T21:14:01.387Z",
+      "updatedAt": "2026-10-18T21:14:01.387Z"
+    },
+    {
+      "title": "Recherche arborescente",
+      "lens": "range",
+      "parents": [
+        "n3"
+      ],
+      "summary": "Comme un moteur d'échecs : agents en parallèle sur les pistes, score par juge, élagage des pistes faibles.",
+      "estimate": "3d",
+      "id": "n7",
+      "status": "proposed",
+      "createdAt": "2026-10-18T21:14:02.883Z",
+      "updatedAt": "2026-10-18T21:14:02.883Z"
+    },
+    {
+      "title": "Publier et soumettre",
+      "lens": "step",
+      "parents": [
+        "n5",
+        "n6",
+        "n7"
+      ],
+      "summary": "Dépôt dédié, installation à l'échelle utilisateur, dossier pour le répertoire officiel des plugins.",
+      "estimate": "1d",
+      "id": "n8",
+      "status": "proposed",
+      "createdAt": "2026-10-18T21:14:04.181Z",
+      "updatedAt": "2026-10-18T21:14:04.181Z"
+    },
+    {
+      "title": "Stratégie adoption",
+      "lens": "goal",
+      "status": "exploring",
+      "parents": [
+        "n1"
+      ],
+      "summary": "Le but derrière le buzz : être la personne qui a montré comment un humain garde la main sur des agents. Le plugin est la preuve, pas le but.",
+      "id": "n9",
+      "createdAt": "2026-10-18T21:20:05.843Z",
+      "updatedAt": "2026-10-18T21:20:05.843Z"
+    },
+    {
+      "title": "Preuve avant promo",
+      "lens": "altitude",
+      "parents": [
+        "n9"
+      ],
+      "summary": "Pas de lancement sans une démo réelle mesurée : un projet mené avec 3 pistes en parallèle, temps estimé vs réel, vidéo de 60 s.",
+      "estimate": "2w",
+      "id": "n10",
+      "status": "proposed",
+      "createdAt": "2026-10-18T21:20:08.591Z",
+      "updatedAt": "2026-10-18T21:20:08.591Z"
+    },
+    {
+      "title": "Contenu > plugin",
+      "lens": "depth",
+      "parents": [
+        "n9"
+      ],
+      "summary": "Ce que font les gens remarqués : ils publient leurs apprentissages, pas leur outil. Une série d'articles « ce que j'ai appris en pilotant des agents » avec données.",
+      "estimate": "4w",
+      "id": "n11",
+      "status": "proposed",
+      "createdAt": "2026-10-18T21:20:11.140Z",
+      "updatedAt": "2026-10-18T21:20:11.140Z"
+    },
+    {
+      "title": "Distribution",
+      "lens": "range",
+      "parents": [
+        "n9"
+      ],
+      "summary": "Méthodes du lancement produit : répertoire officiel, awesome-lists, Show HN, réponse directe au tutoriel de Felix, communauté Claude Code.",
+      "estimate": "2w",
+      "id": "n12",
+      "status": "proposed",
+      "createdAt": "2026-10-18T21:20:13.737Z",
+      "updatedAt": "2026-10-18T21:20:13.737Z"
+    },
+    {
+      "title": "Boucle de rétention",
+      "lens": "depth",
+      "parents": [
+        "n10",
+        "n4"
+      ],
+      "summary": "Le buzz ne fait pas l'usage : l'historique et la calibration des estimations (phase 2-3) rendent le plugin plus utile à chaque projet. C'est ce qui retient.",
+      "estimate": "3w",
+      "id": "n13",
+      "status": "proposed",
+      "createdAt": "2026-10-18T21:20:17.249Z",
+      "updatedAt": "2026-10-18T21:20:17.249Z"
+    },
+    {
+      "title": "Mesurer l'adoption",
+      "lens": "depth",
+      "parents": [
+        "n12"
+      ],
+      "summary": "Juge externe : étoiles, installs du marketplace, issues ouvertes par d'autres, PR externes. Objectif à 90 j : 500 étoiles, 10 contributeurs.",
+      "estimate": "1w",
+      "id": "n14",
+      "status": "proposed",
+      "createdAt": "2026-10-18T21:20:19.877Z",
+      "updatedAt": "2026-10-18T21:20:19.877Z"
+    },
+    {
+      "title": "Lancement",
+      "lens": "step",
+      "parents": [
+        "n10",
+        "n11",
+        "n12"
+      ],
+      "summary": "Jour J : vidéo + article + dépôt public + post qui répond à Felix. Tout prêt avant, publié le même matin.",
+      "estimate": "1d",
+      "id": "n15",
+      "status": "proposed",
+      "createdAt": "2026-10-18T21:20:22.882Z",
+      "updatedAt": "2026-10-18T21:20:22.882Z"
+    }
+  ],
+  "auto": {
+    "on": false,
+    "turns": 0,
+    "maxTurns": 40
+  }
+}

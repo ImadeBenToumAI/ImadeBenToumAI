@@ -2,5 +2,5 @@
   "extraKnownMarketplaces": {
     "imade": { "source": { "source": "github", "repo": "ImadeBenToumAI/ImadeBenToumAI" } }
   },
-  "enabledPlugins": { "ambition-tree@imade": true }
+  "enabledPlugins": { "ambiflex@imade": true }
 }

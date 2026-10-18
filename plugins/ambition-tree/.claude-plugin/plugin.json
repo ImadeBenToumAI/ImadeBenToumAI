@@ -1,9 +1,0 @@
-{
-  "name": "ambition-tree",
-  "version": "0.1.0",
-  "description": "Arbre de raisonnement visuel et pilotable (méthode be-ambitious de Felix Rieseberg : Altitude, Profondeur, Étendue) + vue des branches Git.",
-  "types": "./types/index.d.ts",
-  "author": {
-    "name": "ImadeBenToumAI"
-  }
-}
