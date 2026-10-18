@@ -202,32 +202,32 @@
       "finishedAt": "2026-10-18T22:41:08.596Z"
     },
     {
-      "title": "Mesurer l'adoption",
+      "title": "Measure adoption",
       "lens": "depth",
       "parents": [
         "n12"
       ],
-      "summary": "Juge externe : étoiles, installs du marketplace, issues ouvertes par d'autres, PR externes. Objectif à 90 j : 500 étoiles, 10 contributeurs.",
+      "summary": "Weekly node update after launch: stars, installs, issues by others, external PRs, Anthropic mentions. Targets at 90 days: 500 / — / 20 / 10 / 1 (docs/launch-kit.md §8). Starts on launch day.",
       "estimate": "1w",
       "id": "n14",
       "status": "proposed",
       "createdAt": "2026-10-18T21:20:19.877Z",
-      "updatedAt": "2026-10-18T21:20:19.877Z"
+      "updatedAt": "2026-10-18T22:41:23.528Z"
     },
     {
-      "title": "Lancement",
+      "title": "Launch day",
       "lens": "step",
       "parents": [
         "n10",
         "n11",
         "n12"
       ],
-      "summary": "Jour J : vidéo + article + dépôt public + post qui répond à Felix. Tout prêt avant, publié le même matin.",
+      "summary": "Same-morning order in docs/launch-kit.md §7: dedicated repo, article 1, reply to Felix with the video, Show HN, awesome lists, communities. Waits on the user: video recorded, articles signed, repo created.",
       "estimate": "1d",
       "id": "n15",
       "status": "proposed",
       "createdAt": "2026-10-18T21:20:22.882Z",
-      "updatedAt": "2026-10-18T21:20:22.882Z"
+      "updatedAt": "2026-10-18T22:41:23.543Z"
     },
     {
       "title": "Demo: CSV parse",
