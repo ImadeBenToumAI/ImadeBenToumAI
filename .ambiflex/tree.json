@@ -102,12 +102,13 @@
       "parents": [
         "n3"
       ],
-      "summary": "Like a chess engine: N subagents in parallel on N tracks, each in its branch, scored by its declared judge; prune the weak, merge the best. Budget shown before launch.",
+      "summary": "tree_explore / tree_prune built and unit-tested (31 tests). Real end-to-end judge pending: the CSV-parse demo under n16 must run with 3 parallel explorers and the winner must beat the baseline on demo/bench.js.",
       "estimate": "3d",
       "id": "n7",
-      "status": "proposed",
+      "status": "exploring",
       "createdAt": "2026-10-18T21:14:02.883Z",
-      "updatedAt": "2026-10-18T22:01:10.520Z"
+      "updatedAt": "2026-10-18T22:10:54.432Z",
+      "startedAt": "2026-10-18T22:10:54.432Z"
     },
     {
       "title": "Publier et soumettre",
@@ -218,11 +219,67 @@
       "status": "proposed",
       "createdAt": "2026-10-18T21:20:22.882Z",
       "updatedAt": "2026-10-18T21:20:22.882Z"
+    },
+    {
+      "title": "Demo: CSV parse",
+      "lens": "step",
+      "parents": [
+        "n7"
+      ],
+      "summary": "Real tree-search run: speed up demo/parse.js (baseline 334 ms on bench.js). Three tracks explored in parallel, scored by speedup; prune, merge the best.",
+      "estimate": "1h/2h/4h",
+      "judge": "BASELINE_MS=334 node demo/bench.js <impl> → SCORE = speedup; wrong output scores 0",
+      "id": "n16",
+      "status": "proposed",
+      "createdAt": "2026-10-18T22:10:54.450Z",
+      "updatedAt": "2026-10-18T22:10:54.450Z"
+    },
+    {
+      "title": "Track: no object spread",
+      "lens": "step",
+      "parents": [
+        "n16"
+      ],
+      "summary": "Build each row by assignment instead of spreading a new object per cell; keep split-based parsing.",
+      "estimate": "20min/30min/1h",
+      "judge": "BASELINE_MS=334 node demo/bench.js demo/parse.js (run from the worktree)",
+      "id": "n17",
+      "status": "proposed",
+      "createdAt": "2026-10-18T22:10:58.177Z",
+      "updatedAt": "2026-10-18T22:10:58.177Z"
+    },
+    {
+      "title": "Track: single pass",
+      "lens": "step",
+      "parents": [
+        "n16"
+      ],
+      "summary": "One pass over the text with indexOf, no split and no intermediate line array.",
+      "estimate": "30min/1h/2h",
+      "judge": "BASELINE_MS=334 node demo/bench.js demo/parse.js (run from the worktree)",
+      "id": "n18",
+      "status": "proposed",
+      "createdAt": "2026-10-18T22:11:00.356Z",
+      "updatedAt": "2026-10-18T22:11:00.356Z"
+    },
+    {
+      "title": "Track: shaped rows",
+      "lens": "step",
+      "parents": [
+        "n16"
+      ],
+      "summary": "Pre-build a row constructor from the header so every row has the same hidden class; trim only when needed.",
+      "estimate": "30min/1h/2h",
+      "judge": "BASELINE_MS=334 node demo/bench.js demo/parse.js (run from the worktree)",
+      "id": "n19",
+      "status": "proposed",
+      "createdAt": "2026-10-18T22:11:02.537Z",
+      "updatedAt": "2026-10-18T22:11:02.537Z"
     }
   ],
   "auto": {
     "on": true,
-    "turns": 11,
+    "turns": 12,
     "maxTurns": 40,
     "startedAt": "2026-10-18T21:55:08.518Z"
   },
