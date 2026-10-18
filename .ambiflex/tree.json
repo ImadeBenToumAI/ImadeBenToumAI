@@ -151,12 +151,12 @@
         "n9",
         "n5"
       ],
-      "summary": "No launch without a real measured demo: a project run with 3 tracks in parallel, estimated vs actual time, a 60-second video. Needs calibrated estimates (n5) first.",
+      "summary": "The measured demo exists (3 agents, 334 → 44 ms, independent benchmark). The 60-second video script is in docs/launch-kit.md, shot by shot; the recording is the user's.",
       "estimate": "2w",
       "id": "n10",
-      "status": "proposed",
+      "status": "review",
       "createdAt": "2026-10-18T21:20:08.591Z",
-      "updatedAt": "2026-10-18T22:02:18.114Z"
+      "updatedAt": "2026-10-18T22:41:04.342Z"
     },
     {
       "title": "Content over plugin",
@@ -178,26 +178,28 @@
       "parents": [
         "n9"
       ],
-      "summary": "Méthodes du lancement produit : répertoire officiel, awesome-lists, Show HN, réponse directe au tutoriel de Felix, communauté Claude Code.",
+      "summary": "All texts drafted in docs/launch-kit.md: reply to Felix (with thread), Show HN title and first comment, awesome-list line, Discord/Reddit post, French post, launch-day order. Posting is the user's.",
       "estimate": "2w",
       "id": "n12",
-      "status": "proposed",
+      "status": "review",
       "createdAt": "2026-10-18T21:20:13.737Z",
-      "updatedAt": "2026-10-18T21:20:13.737Z"
+      "updatedAt": "2026-10-18T22:41:06.079Z"
     },
     {
-      "title": "Boucle de rétention",
+      "title": "Retention loop",
       "lens": "depth",
       "parents": [
         "n10",
         "n4"
       ],
-      "summary": "Le buzz ne fait pas l'usage : l'historique et la calibration des estimations (phase 2-3) rendent le plugin plus utile à chaque projet. C'est ce qui retient.",
+      "summary": "Buzz brings installs; usage comes from history and calibration. Both shipped in v0.3.",
       "estimate": "3w",
       "id": "n13",
-      "status": "proposed",
+      "status": "done",
       "createdAt": "2026-10-18T21:20:17.249Z",
-      "updatedAt": "2026-10-18T21:20:17.249Z"
+      "updatedAt": "2026-10-18T22:41:08.596Z",
+      "verification": "Phases 2 and 3 shipped in v0.3 (event log, calibration from real timings, expected end date): the plugin gets more useful with every project, which is what this node asked for; measured by the calibration line in tree_get",
+      "finishedAt": "2026-10-18T22:41:08.596Z"
     },
     {
       "title": "Mesurer l'adoption",
@@ -303,16 +305,16 @@
   ],
   "auto": {
     "on": true,
-    "turns": 19,
+    "turns": 20,
     "maxTurns": 40,
     "startedAt": "2026-10-18T21:55:08.518Z"
   },
   "cost": {
-    "spentUsd": 50.78,
-    "sessionUsd": 50.78,
-    "ratePerHour": 22.45,
+    "spentUsd": 51.66,
+    "sessionUsd": 51.66,
+    "ratePerHour": 24.47,
     "assumedRate": false,
-    "estimateUsd": 328.63,
+    "estimateUsd": 358.22,
     "model": "claude-fable-5-1",
     "rateLimits": [
       {
