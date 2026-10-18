@@ -134,14 +134,14 @@
     {
       "title": "Adoption strategy",
       "lens": "goal",
-      "status": "exploring",
+      "status": "review",
       "parents": [
         "n1"
       ],
-      "summary": "Umbrella for n10-n15: settled when its children are. The plugin now treats goal nodes as umbrellas (their children are workable while they stay open) and works the plan in the order it was written.",
+      "summary": "Umbrella for n10-n15. Everything Claude could do alone is done; the open children wait on the user (video, articles, posting, launch-day repo). End-to-end report in docs/auto-run-report.md.",
       "id": "n9",
       "createdAt": "2026-10-18T21:20:05.843Z",
-      "updatedAt": "2026-10-18T22:02:16.531Z",
+      "updatedAt": "2026-10-18T23:01:40.241Z",
       "startedAt": "2026-10-18T21:20:05.843Z"
     },
     {
@@ -310,11 +310,11 @@
     "startedAt": "2026-10-18T21:55:08.518Z"
   },
   "cost": {
-    "spentUsd": 55.69,
-    "sessionUsd": 55.69,
-    "ratePerHour": 23.58,
-    "assumedRate": false,
-    "estimateUsd": 260.29,
+    "spentUsd": 57.35,
+    "sessionUsd": 57.35,
+    "ratePerHour": 30,
+    "assumedRate": true,
+    "estimateUsd": 331.2,
     "model": "claude-fable-5-1",
     "rateLimits": [
       {
