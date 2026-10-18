@@ -158,16 +158,25 @@ export function current(tree: Tree): TreeNode | undefined {
   return byTime.find(n => n.status === 'review') ?? byTime.find(n => n.status === 'exploring') ?? nextOpen(tree)
 }
 
-/** Next node to work on in auto mode: a proposed node whose parents are all finished (or merged/abandoned). */
+/**
+ * Next node to work on in auto mode: a proposed node whose parents are all settled. A goal node is
+ * an umbrella: its children are workable while it is open. Oldest first, so a plan runs in the
+ * order it was written, then shallowest.
+ */
 export function nextOpen(tree: Tree): TreeNode | undefined {
   const byId = new Map(tree.nodes.map(n => [n.id, n]))
   const settled = (id: string) => {
     const p = byId.get(id)
-    return !p || FINISHED.includes(p.status) || p.status === 'abandoned'
+    return !p || FINISHED.includes(p.status) || p.status === 'abandoned' || p.lens === 'goal'
   }
-  const candidates = tree.nodes.filter(n => n.status === 'proposed' && n.parents.every(settled))
+  const candidates = tree.nodes.filter(n => n.status === 'proposed' && n.lens !== 'goal' && n.parents.every(settled))
   const d = depths(tree)
-  return candidates.sort((a, b) => (d.get(a.id) ?? 0) - (d.get(b.id) ?? 0) || a.createdAt.localeCompare(b.createdAt))[0]
+  return candidates.sort((a, b) => a.createdAt.localeCompare(b.createdAt) || (d.get(a.id) ?? 0) - (d.get(b.id) ?? 0))[0]
+}
+
+/** What auto mode works on next: a non-goal node already being explored (resume it), else the next open one. */
+export function autoTarget(tree: Tree): TreeNode | undefined {
+  return tree.nodes.find(n => n.status === 'exploring' && n.lens !== 'goal') ?? nextOpen(tree)
 }
 
 /** "30min" | "2h" | "3d" | "1w" (also "2 h", "1.5d") → minutes; 0 when absent. A day is 8 h, a week 5 days. */

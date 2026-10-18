@@ -6,7 +6,7 @@ import { LOG_FILE, eventsFromSnapshot, parseLog, replay, serialize } from './log
 import type { Event } from './log'
 import {
   LENSES, LENS_LABEL, STATUSES, STATUS_LABEL, assumedRate, calibration, costEstimate, current, emptyTree, eta, human,
-  merge, nextId, nextOpen, nodeRef, outline, parseTree, progress, renderSvg, upsert,
+  merge, autoTarget, nextId, nodeRef, outline, parseTree, progress, renderSvg, upsert,
 } from './tree'
 
 const PLUGIN = 'ambiflex'
@@ -199,9 +199,7 @@ async function handOver($: $, text: string) {
 async function kick($: $) {
   const t = await read($, tree)
   if (!t.auto.on) return
-  const open = nextOpen(t)
-  const exploring = t.nodes.find(n => n.status === 'exploring')
-  const target = exploring ?? open
+  const target = autoTarget(t)
   if (!target) {
     const elapsed = t.auto.startedAt ? (Date.now() - Date.parse(t.auto.startedAt)) / 60000 : 0
     await commit($, { kind: 'auto', on: false, turns: t.auto.turns })

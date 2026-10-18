@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { assumedRate, calibration, costEstimate, current, depths, emptyTree, eta, merge, minutes, nextOpen, nodeRef, outline, progress, renderSvg, upsert } from '../hooks/tree'
+import { assumedRate, autoTarget, calibration, costEstimate, current, depths, emptyTree, eta, merge, minutes, nextOpen, nodeRef, outline, progress, renderSvg, upsert } from '../hooks/tree'
 
 const T0 = '2026-10-18T00:00:00.000Z'
 
@@ -65,8 +65,11 @@ test('parses estimates and finds the critical path', () => {
   expect(e.remaining).toBe(360)
 })
 
-test('picks the next open node whose parents are settled', () => {
+test('picks the next open node whose parents are settled; a goal node never blocks its children', () => {
   expect(nextOpen(sample())!.id).toBe('n2')
+  const g = upsert(upsert(emptyTree(), { title: 'Umbrella', lens: 'goal', status: 'exploring' }, T0).tree, { title: 'Child', lens: 'depth', parents: ['n1'] }, T0).tree
+  expect(nextOpen(g)!.id).toBe('n2')
+  expect(autoTarget(g)!.id).toBe('n2')
   const t = upsert(upsert(sample(), { id: 'n2', status: 'done', verification: 'x' }, T0).tree, { id: 'n3', status: 'done', verification: 'x' }, T0).tree
   expect(nextOpen(t)!.id).toBe('n4')
 })
