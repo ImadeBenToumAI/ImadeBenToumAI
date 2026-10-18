@@ -79,7 +79,7 @@ export function replay(events: Event[]): Tree {
           auto: {
             ...tree.auto,
             on: e.on,
-            startedAt: e.on && e.turns === undefined ? e.t : tree.auto.startedAt,
+            startedAt: e.on && (e.turns === undefined || !tree.auto.startedAt) ? e.t : tree.auto.startedAt,
             maxTurns: e.maxTurns ?? tree.auto.maxTurns,
             turns: e.turns ?? (e.on && e.turns === undefined ? 0 : tree.auto.turns),
           },

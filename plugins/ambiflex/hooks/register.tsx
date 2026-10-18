@@ -109,7 +109,7 @@ function applyOn(t: Tree, e: Event): Tree {
       auto: {
         ...t.auto,
         on: e.on,
-        startedAt: e.on && e.turns === undefined ? e.t : t.auto.startedAt,
+        startedAt: e.on && (e.turns === undefined || !t.auto.startedAt) ? e.t : t.auto.startedAt,
         maxTurns: e.maxTurns ?? t.auto.maxTurns,
         turns: e.turns ?? (e.on && e.turns === undefined ? 0 : t.auto.turns),
       },
@@ -178,6 +178,24 @@ async function stopAuto($: $, reason: string) {
   $.ui.toast(`Auto mode off: ${reason}`)
 }
 
+/** The hand-over prompt the plugin queued last, until a turn shows it arrived. */
+let pendingKick: string | undefined
+/** True once a queued hand-over never started a turn (some hosts do not run plugin-submitted prompts). */
+let handOverLost = false
+
+/** Submits a hand-over prompt; on a host that lost one before, sends it to the session as a peer message instead. */
+async function handOver($: $, text: string) {
+  pendingKick = text
+  if (handOverLost) {
+    const sessionId = await $.session.id().catch(() => undefined)
+    if (sessionId) {
+      await ($.session.send as unknown as (a: unknown) => Promise<unknown>)({ to: { sessionId }, text }).catch(() => undefined)
+      return
+    }
+  }
+  void $.prompt.submit({ text })
+}
+
 async function kick($: $) {
   const t = await read($, tree)
   if (!t.auto.on) return
@@ -188,9 +206,7 @@ async function kick($: $) {
     const elapsed = t.auto.startedAt ? (Date.now() - Date.parse(t.auto.startedAt)) / 60000 : 0
     await commit($, { kind: 'auto', on: false, turns: t.auto.turns })
     $.ui.status(undefined)
-    void $.prompt.submit({
-      text: `[tree] Auto mode finished: no open node left. Elapsed ${human(elapsed)}. Write a short end-to-end report: what was done, what was verified and how, what still needs my review, and the estimate vs. actual time per node.`,
-    })
+    await handOver($, `[tree] Auto mode finished: no open node left. Elapsed ${human(elapsed)}. Write a short end-to-end report: what was done, what was verified and how, what still needs my review, and the estimate vs. actual time per node.`)
     return
   }
   if (t.auto.turns >= t.auto.maxTurns) {
@@ -200,10 +216,8 @@ async function kick($: $) {
   await commit($, { kind: 'auto', on: true, turns: t.auto.turns + 1 })
   const e = eta(t)
   $.ui.status(`auto ${t.auto.turns + 1}/${t.auto.maxTurns} · ${target.id} · ETA ${human(e.critical)}`)
-  void $.prompt.submit({
-    text: `[tree] Auto mode, turn ${t.auto.turns + 1}/${t.auto.maxTurns}. Work on ${target.id} "${target.title}" (${LENS_LABEL[target.lens]}${target.estimate ? `, estimate ${target.estimate}` : ''}). `
-      + `Set it exploring, do the work, verify it with an external judge, then tree_upsert it done with its verification (or review if nothing can prove it, saying why). Create sub-steps if needed. Stop the turn when this node is settled; I will hand you the next one.`,
-  })
+  await handOver($, `[tree] Auto mode, turn ${t.auto.turns + 1}/${t.auto.maxTurns}. Work on ${target.id} "${target.title}" (${LENS_LABEL[target.lens]}${target.estimate ? `, estimate ${target.estimate}` : ''}). `
+    + `Set it exploring, do the work, verify it with an external judge, then tree_upsert it done with its verification (or review if nothing can prove it, saying why). Create sub-steps if needed. Stop the turn when this node is settled; I will hand you the next one.`)
 }
 
 async function drawTree($: $, e: ResolveInput) {
@@ -490,6 +504,17 @@ export const register: Register = (on, opts) => {
   on('prompt.compose', async ($, e, next) => {
     const composed = await next(e)
     return { sections: [...composed.sections, { id: `${PLUGIN}:method`, text: METHOD, scope: 'session' as const }] }
+  })
+
+  // A queued hand-over that did not start the next main turn was lost by the host: say so once,
+  // switch to peer messages, and carry the pending node on this turn so nothing stalls.
+  on('turn.start', async ($, e, next) => {
+    if (!pendingKick || e.agentId) return next(e)
+    const text = pendingKick
+    if (e.text.startsWith('[tree] Auto mode')) { pendingKick = undefined; return next(e) }
+    pendingKick = undefined
+    if (!handOverLost) { handOverLost = true; $.ui.toast('Ambiflex: this host does not run plugin-submitted prompts; hand-overs now ride your next turn.') }
+    return next({ ...e, text: `${text}\n\n${e.text}` })
   })
 
   // Hand the next node over once a turn ends in auto mode.
