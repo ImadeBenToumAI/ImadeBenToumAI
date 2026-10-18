@@ -298,6 +298,10 @@ const __TREE = {"version": 1, "goal": "Make Ambiflex the reference Claude Code p
       view.x = cx - (cx - view.x) * f; view.y = cy - (cy - view.y) * f; view.k = Math.min(3, Math.max(.2, view.k * f)); apply(); }, { passive: false });
     function apply() { const w = $('world'); if (w) w.setAttribute('transform', `translate(${view.x},${view.y}) scale(${view.k})`); }
     window.__apply = apply;
+    // Fit the whole graph (or a sub-box) into the graph area, leaving `right` px free (for the docked sheet).
+    window.__fit = (right = 0, pad = 24, box = null) => { const w = $('world'); const b = box || (() => { let x1=1e9,y1=1e9,x2=-1e9,y2=-1e9; w.querySelectorAll('.node').forEach(n => { const r = (n.querySelector('rect') || n).getBBox(); const m = n.transform.baseVal.consolidate(); const tx = m ? m.matrix.e : 0, ty = m ? m.matrix.f : 0; x1=Math.min(x1,r.x+tx); y1=Math.min(y1,r.y+ty); x2=Math.max(x2,r.x+r.width+tx); y2=Math.max(y2,r.y+r.height+ty) }); return { x:x1, y:y1, width:x2-x1, height:y2-y1 } })(); const r = svg.getBoundingClientRect();
+      const aw = window.innerWidth - right - 2 * pad, ah = r.height - 2 * pad; const k = Math.min(aw / b.width, ah / b.height);
+      view.k = k; view.x = pad + (aw - b.width * k) / 2 - b.x * k; view.y = pad + (ah - b.height * k) / 2 - b.y * k; apply(); return { k, x: view.x, y: view.y, b } };
   })();
 
   // ---------- liste & git ----------

@@ -2,33 +2,32 @@
 
 Everything launch day needs, ready to paste. Drafted by Claude from the session's real data; Imade edits, signs and posts. Nothing here is published by the plugin or by Claude.
 
-## 1. The 75-second film (node n10)
+## 1. The launch film (node n10)
 
-**Rendered, ready to post:** `assets/launch/ambiflex-desktop.mp4` (1920×1080, dark mode, no captions: the voiced master) and `assets/launch/ambiflex-desktop-subtitled.mp4` (same cut with the subtitles burned in, for muted autoplay on X and LinkedIn), plus `assets/launch/ambiflex-desktop.srt` and one still per shot (`assets/launch/0N-*.png`) for posts and the README.
+**Rendered, voiced, ready to post:** `assets/launch/ambiflex-film.mp4` (1920×1080, 30 fps, 104 s, dark mode, English narration). Subtitles are in `assets/launch/ambiflex-film.srt` for platforms that take a separate file; one still per scene is in `assets/launch/0N-*.png`.
 
-**Voice (the one step left):** the narration script, cue by cue with timecodes, is `docs/launch-video-script.md`. Generate one English audio file from it (ElevenLabs, OpenAI TTS, or Codex with a TTS tool), save it as `assets/launch/narration.mp3`, then run:
+Built with [HyperFrames](https://github.com/heygen-com/hyperframes) (HTML compositions rendered frame by frame) in `tools/launch-video/film`. The narration is synthesized locally with Kokoro (open-weights text-to-speech, voice `am_michael`); the lines are in `tools/launch-video/voice.py` and `docs/launch-video-script.md`.
 
-```
-node tools/launch-video/mux.js
-```
-
-It writes `assets/launch/ambiflex-desktop-voiced.mp4`: the picture is the clock, the voice is padded or cut to it. Post the voiced file on YouTube and HN, the subtitled one on X and LinkedIn.
-
-Re-render after a tree change with `NODE_PATH=<playwright> node tools/launch-video/record-desktop.js <outDir> [--burn]` (Playwright's Chromium and ffmpeg; the page it records embeds `.ambiflex/tree.json`), then encode the `.webm` with `ffmpeg -i … -c:v libx264 -crf 20 -pix_fmt yuv420p`.
-
-Shot list, as rendered:
-
-| # | Seconds | What is on screen | Subtitle |
+| # | Seconds | Scene | Narration (short) |
 |---|---|---|---|
-| 1 | 0-7 | The whole tree, top-down, 19 nodes, slow push-in. | "This is a plan Claude Code executed on its own. Nineteen nodes. One evening." |
-| 2 | 7-15 | Zoom on the goal and the three colour-coded tracks. | "It follows Felix Rieseberg's method: altitude, depth, range." |
-| 3 | 15-24 | n7 opens; the verification line is highlighted. | "A node is not done because the model says so. It needs a proof. Only I can validate." |
-| 4 | 24-34 | n16 opens: three tracks, three scores. | "Three agents, three ways to speed up a parser, each in its own branch, scored by the same benchmark." |
-| 5 | 34-42 | Terminal: the benchmark typed live, `SCORE: 7.38`. | "Then I ran the benchmark myself. 334 ms down to 44." |
-| 6 | 42-50 | Header highlighted: spent, estimate to finish, ETA, windows. | "Cost and time on screen before and during. Estimates calibrated against real timings." |
-| 7 | 50-58 | Terminal: the plugin's hand-over line. | "In auto mode, after each turn, the plugin hands Claude the next open node." |
-| 8 | 58-66 | n11 opens, Validate pressed, toast "Sent to Claude". | "And I steer from anywhere. Validate, go deeper, go wider, prune." |
-| 9 | 66-75 | Title card, install line. | "Ambiflex. Open source, one line to install." |
+| 1 | 0-6 | Animated logo: four nodes fly in, edges draw, the tree swings in 3D, the wordmark rises. | "Ambiflex. An ambitious reasoning tree for Claude Code." |
+| 2 | 6-13 | The whole tree, 3D push-in. | "A plan Claude Code executed on its own. Nineteen nodes. One evening." |
+| 3 | 13-25 | The top of the tree; Altitude / Depth / Range labels pop in. | "It follows Felix Rieseberg's method…" |
+| 4 | 25-37 | n7 opens; the verification line is highlighted. | "A node is not done because the model says so…" |
+| 5 | 37-48 | n16 opens; three score chips, the winner in green. | "Three agents, three ways to speed up a parser…" |
+| 6 | 48-59 | Typed terminal: the benchmark, `SCORE: 7.38`. | "Then I ran the benchmark myself. 334 ms down to 44." |
+| 7 | 59-72 | Dive into the header (spent, estimate, ETA, windows), pull back, calibration chip. | "Cost and time are on screen before and during…" |
+| 8 | 72-85 | Typed terminal: auto mode's hand-over lines. | "In auto mode, after each turn, the plugin hands Claude the next open node…" |
+| 9 | 85-94 | n11 opens; the cursor travels to Validate and clicks; toast "Sent to Claude". | "And I steer from anywhere…" |
+| 10 | 94-104 | Logo, install line, repository. | "Ambiflex. Open source, one line to install…" |
+
+**Re-render after a tree change** (Chromium, ffmpeg, Node 22, Python 3):
+
+```
+NODE_PATH=<playwright> node tools/launch-video/capture.js tools/launch-video/film/assets/img   # stills from .ambiflex/tree.json
+python3 tools/launch-video/voice.py --models <dir with kokoro-v1.0.onnx + voices-v1.0.bin>      # narration .wav files
+cd tools/launch-video/film && npx hyperframes@0.8.173 render . -o renders/ambiflex-film.mp4 -q high
+```
 
 ## 2. Reply to Felix Rieseberg's tutorial on X (node n12, first)
 

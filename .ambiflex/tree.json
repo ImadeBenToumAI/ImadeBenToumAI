@@ -303,6 +303,21 @@
       "startedAt": "2026-10-18T22:11:14.999Z",
       "score": 7.3,
       "finishedAt": "2026-10-18T22:12:49.747Z"
+    },
+    {
+      "id": "n20",
+      "title": "HyperFrames film",
+      "lens": "step",
+      "status": "exploring",
+      "parents": [
+        "n10"
+      ],
+      "summary": "Rebuild the launch film as a HyperFrames composition: animated 3D logo intro, full-frame shots with camera moves, typed terminals, Kokoro English narration timed per cue, title card. Rendered at 1920×1080 30 fps.",
+      "estimate": "2h/3h/5h",
+      "judge": "hyperframes check passes; every frame fills 1920×1080 (no empty half); voice and cues align within 0.3 s; user watches it.",
+      "createdAt": "2026-10-18T23:47:45.801Z",
+      "updatedAt": "2026-10-18T23:47:45.801Z",
+      "startedAt": "2026-10-18T23:47:45.801Z"
     }
   ],
   "auto": {
@@ -312,11 +327,11 @@
     "startedAt": "2026-10-18T21:55:08.518Z"
   },
   "cost": {
-    "spentUsd": 65.34,
-    "sessionUsd": 65.34,
-    "ratePerHour": 26.85,
+    "spentUsd": 70.34,
+    "sessionUsd": 70.34,
+    "ratePerHour": 22.39,
     "assumedRate": false,
-    "estimateUsd": 231.96,
+    "estimateUsd": 193.48,
     "model": "claude-fable-5-1",
     "rateLimits": [
       {
