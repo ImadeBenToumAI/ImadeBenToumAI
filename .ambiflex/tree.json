@@ -65,43 +65,43 @@
       "finishedAt": "2026-10-18T21:59:40.417Z"
     },
     {
-      "title": "Calibrer les estimations",
+      "title": "Calibrated estimates",
       "lens": "altitude",
       "parents": [
         "n4"
       ],
-      "summary": "Comparer estimé et réel, puis corriger les prochaines estimations (PERT + chemin critique = date d'arrivée).",
+      "summary": "Three-point estimates (o/p/pess), critical path (done), arrival date in the header, calibration factor applied to new estimates (measured; the ×0.03 artefact from hand-set timestamps must be excluded).",
       "estimate": "2d",
       "id": "n5",
       "status": "proposed",
       "createdAt": "2026-10-18T21:13:59.938Z",
-      "updatedAt": "2026-10-18T21:13:59.938Z"
+      "updatedAt": "2026-10-18T22:01:10.561Z"
     },
     {
-      "title": "Nœuds ↔ branches ↔ PR",
+      "title": "Nodes ↔ branches ↔ PR",
       "lens": "range",
       "parents": [
         "n4"
       ],
-      "summary": "Une piste = une branche ou un worktree ; Valider = fusionner la PR. Le raisonnement et le code avancent ensemble.",
+      "summary": "One track = one branch or worktree; a node shows its commits and PR; \"Validate\" on a node with a PR proposes the merge (never merges alone).",
       "estimate": "2d",
       "id": "n6",
       "status": "proposed",
       "createdAt": "2026-10-18T21:14:01.387Z",
-      "updatedAt": "2026-10-18T21:14:01.387Z"
+      "updatedAt": "2026-10-18T22:01:10.577Z"
     },
     {
-      "title": "Recherche arborescente",
+      "title": "Tree search",
       "lens": "range",
       "parents": [
         "n3"
       ],
-      "summary": "Comme un moteur d'échecs : agents en parallèle sur les pistes, score par juge, élagage des pistes faibles.",
+      "summary": "Like a chess engine: N subagents in parallel on N tracks, each in its branch, scored by its declared judge; prune the weak, merge the best. Budget shown before launch.",
       "estimate": "3d",
       "id": "n7",
       "status": "proposed",
       "createdAt": "2026-10-18T21:14:02.883Z",
-      "updatedAt": "2026-10-18T21:14:02.883Z"
+      "updatedAt": "2026-10-18T22:01:10.520Z"
     },
     {
       "title": "Publier et soumettre",
@@ -216,7 +216,8 @@
   "auto": {
     "on": true,
     "turns": 2,
-    "maxTurns": 40
+    "maxTurns": 40,
+    "startedAt": "2026-10-18T21:55:08.518Z"
   },
   "cost": {
     "spentUsd": 26.33,
