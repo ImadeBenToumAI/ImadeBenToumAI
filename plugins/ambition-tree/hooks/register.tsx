@@ -26,6 +26,7 @@ Pour chaque tâche, applique la méthode be-ambitious de Felix Rieseberg et trac
 4. Quand tu lances un sous-agent pour un nœud, mets #<id> dans la description de l'agent (ex. "Explorer la piste perf #n4") : le nœud s'affiche alors comme exploré par cet agent.
 5. Quand l'utilisateur agit dans le panneau (messages commençant par [arbre]), exécute la demande et mets l'arbre à jour en conséquence.
 6. Si une branche Git sert un nœud, renseigne branch.
+7. Page mobile : si le fichier .ambition/artifact.json existe, il contient l'URL d'une page « Arbre d'ambition » (artifact claude.ai). Après chaque modification de l'arbre, synchronise-la : ArtifactData set, collection "tree", doc "current", file_path ".ambition/tree.json" (lis d'abord le doc pour obtenir sa version et passe-la en if_version). Les actions que l'utilisateur fait sur cette page t'arrivent comme des commentaires d'artifact commençant par [arbre] : exécute-les, mets l'arbre à jour, puis réponds au fil (ArtifactComments reply) et résous-le.
 Garde l'arbre lisible : titres courts (moins de 24 caractères), détails dans detail.`
 
 const NODE_SCHEMA = {
