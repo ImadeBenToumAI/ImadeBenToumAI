@@ -310,11 +310,11 @@
     "startedAt": "2026-10-18T21:55:08.518Z"
   },
   "cost": {
-    "spentUsd": 54.81,
-    "sessionUsd": 54.81,
-    "ratePerHour": 22.26,
+    "spentUsd": 55.69,
+    "sessionUsd": 55.69,
+    "ratePerHour": 23.58,
     "assumedRate": false,
-    "estimateUsd": 245.78,
+    "estimateUsd": 260.29,
     "model": "claude-fable-5-1",
     "rateLimits": [
       {
