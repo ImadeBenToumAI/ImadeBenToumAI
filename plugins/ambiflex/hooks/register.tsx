@@ -2,9 +2,11 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register, ResolveInput } from 'claude-code'
 
 import type { Cost, Status, Tab, Tree } from '../types'
+import { LOG_FILE, eventsFromSnapshot, parseLog, replay, serialize } from './log'
+import type { Event } from './log'
 import {
   LENSES, LENS_LABEL, STATUSES, STATUS_LABEL, assumedRate, calibration, costEstimate, current, emptyTree, eta, human,
-  merge, nextOpen, nodeRef, outline, parseTree, progress, renderSvg, upsert,
+  merge, nextId, nextOpen, nodeRef, outline, parseTree, progress, renderSvg, upsert,
 } from './tree'
 
 const PLUGIN = 'ambiflex'
@@ -50,17 +52,69 @@ const NODE_SCHEMA = {
 
 type $ = EngineInterface
 
-// The tree is saved in the repository, versioned with the code.
+let sessionId = 'local'
+
+/**
+ * The tree lives in the repository as an append-only event log (merged by Git without
+ * conflicts) plus a derived snapshot, tree.json, kept for readers and for the mobile page.
+ */
 async function load($: $) {
+  sessionId = (await $.session.id().catch(() => 'local')).slice(-6)
+  const hasLog = await $.fs.exists(LOG_FILE).catch(() => false)
+  if (hasLog) {
+    const text = await $.fs.read(LOG_FILE).catch(() => undefined)
+    const replayed = replay(parseLog(typeof text === 'string' ? text : undefined))
+    // Cost is not logged: carry it over from the snapshot.
+    const snap = await $.fs.exists(FILE).catch(() => false) ? parseTree(await $.fs.read(FILE).catch(() => undefined) as string | undefined) : undefined
+    await update($, tree, () => ({ ...replayed, cost: snap?.cost ?? replayed.cost }))
+    return
+  }
   const exists = await $.fs.exists(FILE).catch(() => false)
   const text = exists ? await $.fs.read(FILE).catch(() => undefined) : undefined
   const parsed = parseTree(typeof text === 'string' ? text : undefined)
   await update($, tree, () => parsed)
+  if (parsed.nodes.length || parsed.goal) {
+    // One-time migration of a whole-file tree.json into the log.
+    await $.fs.write(LOG_FILE, serialize(eventsFromSnapshot(parsed, sessionId))).catch(() => undefined)
+    await $.fs.write('.ambiflex/.gitattributes', 'log.jsonl merge=union\n').catch(() => undefined)
+  }
 }
 
+/** Writes the snapshot only (cost, agents): nothing a replay needs. */
 async function save($: $, next: Tree) {
   await update($, tree, () => next)
   await $.fs.write(FILE, `${JSON.stringify(next, null, 2)}\n`)
+}
+
+/** Applies one event to the live tree, appends it to the log, and refreshes the snapshot. */
+async function commit($: $, event: Omit<Event, 't' | 's'>): Promise<Tree> {
+  const t = await read($, tree)
+  const full = { ...event, t: await nowIso($), s: sessionId } as Event
+  const applied = applyOn(t, full)
+  const had = await $.fs.exists(LOG_FILE).catch(() => false)
+  const prior = had ? (await $.fs.read(LOG_FILE).catch(() => '')) as string : ''
+  await $.fs.write(LOG_FILE, `${prior}${prior && !prior.endsWith('\n') ? '\n' : ''}${JSON.stringify(full)}\n`)
+  if (!had) await $.fs.write('.ambiflex/.gitattributes', 'log.jsonl merge=union\n').catch(() => undefined)
+  await save($, applied)
+  return applied
+}
+
+function applyOn(t: Tree, e: Event): Tree {
+  switch (e.kind) {
+    case 'goal': return { ...t, goal: e.goal }
+    case 'upsert': return upsert(t, e.input, e.t).tree
+    case 'merge': return merge(t, e.sources, e.into, e.t)
+    case 'auto': return {
+      ...t,
+      auto: {
+        ...t.auto,
+        on: e.on,
+        startedAt: e.on && e.turns === undefined ? e.t : t.auto.startedAt,
+        maxTurns: e.maxTurns ?? t.auto.maxTurns,
+        turns: e.turns ?? (e.on && e.turns === undefined ? 0 : t.auto.turns),
+      },
+    }
+  }
 }
 
 async function refreshGit($: $) {
@@ -92,16 +146,15 @@ async function trackAgentEnd($: $, key: string, id: string | undefined) {
   if (!node) return
   // An agent finishing proves nothing: the node waits for an external judge.
   const status: Status = node.status === 'exploring' ? 'review' : node.status
-  await save($, upsert(after, { id, status, agent: '' }, await nowIso($)).tree)
+  await commit($, { kind: 'upsert', input: { id, status, agent: '' } })
 }
 
 /** Auto mode: start, then after each answered turn, hand the next open node to the model. */
 /** `kickNow` only where no turn is being held (a command, a button); a tool hook leaves the kick to turn.complete. */
 async function startAuto($: $, maxTurns?: number, kickNow = false) {
-  const t = await read($, tree)
-  const started = await nowIso($)
-  const next = { ...t, auto: { on: true, startedAt: started, turns: 0, maxTurns: maxTurns ?? t.auto.maxTurns }, cost: { ...t.cost, spentUsd: 0 } }
-  await save($, next)
+  const t0 = await read($, tree)
+  await save($, { ...t0, cost: { ...t0.cost, spentUsd: 0 } })
+  const next = await commit($, { kind: 'auto', on: true, maxTurns: maxTurns ?? t0.auto.maxTurns })
   warnedBudget = false
   const cost = await trackCost($).catch(() => next.cost)
   const e = eta(next)
@@ -120,7 +173,7 @@ async function startAuto($: $, maxTurns?: number, kickNow = false) {
 async function stopAuto($: $, reason: string) {
   const t = await read($, tree)
   if (!t.auto.on) return
-  await save($, { ...t, auto: { ...t.auto, on: false } })
+  await commit($, { kind: 'auto', on: false, turns: t.auto.turns })
   $.ui.status(undefined)
   $.ui.toast(`Auto mode off: ${reason}`)
 }
@@ -133,7 +186,7 @@ async function kick($: $) {
   const target = exploring ?? open
   if (!target) {
     const elapsed = t.auto.startedAt ? (Date.now() - Date.parse(t.auto.startedAt)) / 60000 : 0
-    await save($, { ...t, auto: { ...t.auto, on: false } })
+    await commit($, { kind: 'auto', on: false, turns: t.auto.turns })
     $.ui.status(undefined)
     void $.prompt.submit({
       text: `[tree] Auto mode finished: no open node left. Elapsed ${human(elapsed)}. Write a short end-to-end report: what was done, what was verified and how, what still needs my review, and the estimate vs. actual time per node.`,
@@ -144,7 +197,7 @@ async function kick($: $) {
     await stopAuto($, `turn budget (${t.auto.maxTurns}) spent; raise it with tree_auto or /ambiflex auto <turns>`)
     return
   }
-  await save($, { ...t, auto: { ...t.auto, turns: t.auto.turns + 1 } })
+  await commit($, { kind: 'auto', on: true, turns: t.auto.turns + 1 })
   const e = eta(t)
   $.ui.status(`auto ${t.auto.turns + 1}/${t.auto.maxTurns} · ${target.id} · ETA ${human(e.critical)}`)
   void $.prompt.submit({
@@ -170,8 +223,7 @@ async function drawTree($: $, e: ResolveInput) {
   const steer = async (text: string) => {
     await $.prompt.submit({ text: `[tree] ${text}` })
   }
-  const setStatus = async (id: string, status: Status) =>
-    save($, upsert(await read($, tree), { id, status }, await nowIso($)).tree)
+  const setStatus = async (id: string, status: Status) => commit($, { kind: 'upsert', input: { id, status } })
 
   const tabs = (
     <Box flexDirection="row" gap={1}>
@@ -284,7 +336,7 @@ async function drawTree($: $, e: ResolveInput) {
           <Box flexDirection="row" flexWrap="wrap" gap={1}>
             {others.slice(0, 8).map(o => (
               <Button key={`merge-${o.id}`} onPress={async () => {
-                await save($, merge(await read($, tree), [node.id], o.id, await nowIso($)))
+                await commit($, { kind: 'merge', sources: [node.id], into: o.id })
                 await steer(`I merged ${node.id} into ${o.id} "${o.title}". Combine their results.`)
               }}>{o.id}</Button>
             ))}
@@ -456,7 +508,7 @@ export const register: Register = (on, opts) => {
 
   on('tool.call', { tool: 'mcp__ambiflex__tree_set_goal' }, async ($, e) => {
     const goal = String((e as unknown as { goal?: unknown }).goal ?? '').trim().slice(0, 300)
-    await save($, { ...(await read($, tree)), goal })
+    await commit($, { kind: 'goal', goal })
     openPane($).catch(() => undefined)
     return { result: `Goal set: ${goal}` }
   })
@@ -465,15 +517,18 @@ export const register: Register = (on, opts) => {
     const raw = e as unknown as Record<string, unknown>
     const input = Object.fromEntries(Object.keys(NODE_SCHEMA.properties).filter(k => raw[k] !== undefined).map(k => [k, raw[k]]))
     if (input.status === 'validated') delete input.status
-    const { tree: nextTree, node } = upsert(await read($, tree), input as never, await nowIso($))
-    await save($, nextTree)
+    const before = await read($, tree)
+    const isNew = !input.id || !before.nodes.some(n => n.id === input.id)
+    const id = (input.id as string | undefined) ?? nextId(before)
+    const after = await commit($, { kind: 'upsert', input: { ...(input as never as object), id } as never, isNew })
+    const node = after.nodes.find(n => n.id === id)!
     const note = input.status === 'done' && node.status === 'review' ? ' Kept at "needs review": no verification was given.' : ''
     return { result: `Node ${node.id} saved (${LENS_LABEL[node.lens]}, ${STATUS_LABEL[node.status]}).${note}` }
   })
 
   on('tool.call', { tool: 'mcp__ambiflex__tree_merge' }, async ($, e) => {
     const { sources = [], into = '' } = e as unknown as { sources?: string[]; into?: string }
-    await save($, merge(await read($, tree), sources, into, await nowIso($)))
+    await commit($, { kind: 'merge', sources, into })
     return { result: `Merged ${sources.join(', ')} into ${into}.` }
   })
 
@@ -492,7 +547,7 @@ export const register: Register = (on, opts) => {
       const t = await read($, tree)
       id = nodeRef(`${e.description ?? ''} ${e.prompt ?? ''}`, t)
       await update($, agents, list => [...list, key])
-      if (id) await save($, upsert(t, { id, status: 'exploring', agent: e.description ?? 'subagent' }, await nowIso($)).tree)
+      if (id) await commit($, { kind: 'upsert', input: { id, status: 'exploring', agent: e.description ?? 'subagent' } })
     } catch {
       // Tracking must never block the agent.
     }

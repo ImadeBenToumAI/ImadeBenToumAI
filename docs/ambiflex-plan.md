@@ -30,7 +30,7 @@ Disciplines whose real methods are borrowed, not just their vocabulary:
 | D1 | **Prompt injection.** The content of `tree.json` (titles, summaries) was copied into the **system prompt**. A booby-trapped repository could give Claude orders. | High | The system prompt carries only the method. The tree reaches the model through `tree_get`, as data; long fields are clipped. | Fixed in v0.2 |
 | D2 | **"Done" without proof.** A node became `done` when an agent finished: no external judge. | High | New status `review`. An agent finishing sets its node to `review`. `done` requires a `verification`; the tool downgrades otherwise. | Fixed in v0.2 |
 | D3 | **Homonymous agents.** Agents were tracked by their `description`; two with the same text got confused. | Medium | Tracked by `tool_use_id`. | Fixed in v0.2 |
-| D4 | **Git conflicts.** One JSON file rewritten whole; two sessions or branches conflict, last write wins. | Medium | Event log (Phase 2). | Open |
+| D4 | **Git conflicts.** One JSON file rewritten whole; two sessions or branches conflict, last write wins. | Medium | Event log (Phase 2). | Fixed in v0.3 |
 | D5 | **Prompt cache.** The system section changed with every tree edit, invalidating the cache each turn. | Medium | Fixed by D1: the system section is constant. | Fixed in v0.2 |
 | D6 | **Free-text estimates** could not be summed or compared with reality. | Medium | Parsed estimates (`30min`, `2h`, `3d`, `1w`), real time measured between `exploring` and `done`, calibration factor. Three-point estimates remain for Phase 3. | Partly fixed |
 | D7 | **The panel opened at every session**, task or not. | Low | Opens on the first `tree_set_goal`, when the tree already has nodes, or with `/ambiflex`. | Fixed in v0.2 |
@@ -45,7 +45,7 @@ Estimates are in working days with Claude: optimistic / likely / pessimistic.
 ### Phase 1: fixes (n2, n3): 0.5 / 1 / 2 d. Done in v0.2
 See the table above. Judge: `claude plugin validate` and `claude plugin test` green, including the injection test (a title containing "ignore all previous instructions" never appears in the system sections).
 
-### Phase 2: event log (n4): 1 / 2 / 3 d
+### Phase 2: event log (n4): 1 / 2 / 3 d. Done in v0.3 (log.jsonl, replay, union merge, migration); the multi-goal history view is left for Phase 3.
 1. `.ambiflex/log.jsonl`: one line per event `{t, session, kind: goal|upsert|status|merge|decision|auto, payload}`. Append only. `.gitattributes` with `merge=union` so a Git merge never conflicts.
 2. `tree.ts`: a pure `replay(events) → Tree`.
 3. Migration: an old `tree.json` is converted into events.

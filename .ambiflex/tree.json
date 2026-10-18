@@ -9,8 +9,10 @@
       "summary": "Panneau, graphe SVG, actions, outils, onglet Git. 9 tests passent.",
       "id": "n1",
       "parents": [],
+      "verification": "migrated from snapshot (unverified)",
       "createdAt": "2026-10-18T21:13:54.189Z",
-      "updatedAt": "2026-10-18T21:13:54.189Z"
+      "updatedAt": "2026-10-18T21:13:54.189Z",
+      "finishedAt": "2026-10-18T21:13:54.189Z"
     },
     {
       "title": "Corriger la v0.1",
@@ -22,11 +24,11 @@
       "estimate": "1d",
       "id": "n2",
       "status": "done",
-      "createdAt": "2026-10-18T21:13:55.539Z",
-      "updatedAt": "2026-10-18T21:44:32.001088Z",
       "verification": "claude plugin validate + 17 tests green (v0.2)",
       "startedAt": "2026-10-18T21:30:00.000Z",
-      "finishedAt": "2026-10-18T21:44:32.001088Z"
+      "finishedAt": "2026-10-18T21:44:32.001088Z",
+      "createdAt": "2026-10-18T21:13:55.539Z",
+      "updatedAt": "2026-10-18T21:44:32.001088Z"
     },
     {
       "title": "Nœuds vérifiables",
@@ -38,24 +40,29 @@
       "estimate": "1d",
       "id": "n3",
       "status": "done",
-      "createdAt": "2026-10-18T21:13:56.986Z",
-      "updatedAt": "2026-10-18T21:44:32.001088Z",
       "verification": "claude plugin validate + 17 tests green (v0.2)",
       "startedAt": "2026-10-18T21:30:00.000Z",
-      "finishedAt": "2026-10-18T21:44:32.001088Z"
+      "finishedAt": "2026-10-18T21:44:32.001088Z",
+      "createdAt": "2026-10-18T21:13:56.986Z",
+      "updatedAt": "2026-10-18T21:44:32.001088Z"
     },
     {
-      "title": "Journal d'événements",
+      "title": "Event log",
       "lens": "altitude",
       "parents": [
         "n2"
       ],
-      "summary": "Remplacer tree.json par un journal append-only fusionnable par Git : historique complet, plusieurs sessions, passé et futur.",
+      "summary": "Replace the whole-file tree.json with an append-only .ambiflex/log.jsonl that Git merges without conflicts (merge=union); the tree is replayed from it; tree.json stays as a derived snapshot.",
       "estimate": "2d",
       "id": "n4",
-      "status": "proposed",
+      "status": "done",
+      "branch": "claude/ambiflex-auto-run",
+      "startedAt": "2026-10-18T21:56:59.354Z",
       "createdAt": "2026-10-18T21:13:58.485Z",
-      "updatedAt": "2026-10-18T21:13:58.485Z"
+      "updatedAt": "2026-10-18T21:59:40.417Z",
+      "detail": "## Event log (Phase 2)\n\n- `.ambiflex/log.jsonl`: one JSON line per change (`goal`, `upsert`, `merge`, `auto`), append-only, with the session id and a timestamp. `.ambiflex/.gitattributes` sets `merge=union` so two sessions' logs merge without conflicts.\n- `replay(events)` rebuilds the tree in time order. When two sessions created the same id offline, the later one is renamed (`n7-b`) and that session's later references follow.\n- `tree.json` stays as a derived snapshot (readable, synced to the mobile page). Cost is only in the snapshot.\n- Migration: a session that finds a `tree.json` but no log converts it once (`eventsFromSnapshot`).\n\nJudge: `claude plugin test` 25/25, migration script round trip `true`.",
+      "verification": "claude plugin test: 25 pass (replay equals state, union of two divergent logs recovers both subtrees with renamed collisions, snapshot migration round-trips); real tree.json migrated to log.jsonl with an exact round trip",
+      "finishedAt": "2026-10-18T21:59:40.417Z"
     },
     {
       "title": "Calibrer les estimations",
@@ -121,7 +128,8 @@
       "summary": "Le but derrière le buzz : être la personne qui a montré comment un humain garde la main sur des agents. Le plugin est la preuve, pas le but.",
       "id": "n9",
       "createdAt": "2026-10-18T21:20:05.843Z",
-      "updatedAt": "2026-10-18T21:20:05.843Z"
+      "updatedAt": "2026-10-18T21:20:05.843Z",
+      "startedAt": "2026-10-18T21:20:05.843Z"
     },
     {
       "title": "Preuve avant promo",
@@ -207,13 +215,12 @@
   ],
   "auto": {
     "on": true,
-    "startedAt": "2026-10-18T21:55:08.518Z",
-    "turns": 0,
+    "turns": 2,
     "maxTurns": 40
   },
   "cost": {
-    "spentUsd": 25.28,
-    "sessionUsd": 25.28,
+    "spentUsd": 26.33,
+    "sessionUsd": 26.33,
     "ratePerHour": 30,
     "assumedRate": true,
     "estimateUsd": 511.2,

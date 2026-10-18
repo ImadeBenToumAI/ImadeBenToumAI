@@ -11,7 +11,7 @@ Ambiflex turns Felix Rieseberg's **be-ambitious** method (Altitude, Depth, Range
 - **Auto mode.** `/ambiflex auto` (or the *Run on auto* button) executes the plan without asking for approval: after each turn, the plugin hands Claude the next open node whose parents are settled, until nothing is left, the turn budget is spent, you interrupt, or `/ambiflex stop`. It announces the end-to-end ETA when it starts and writes a report (estimate vs. actual per node) when it finishes.
 - **Subagents.** An agent spawned with `#n4` in its description is attached to node n4 and shown live.
 - **Git branches tab.** Branches, commits and merges, refreshed after every git command.
-- **History.** The tree lives in `.ambiflex/tree.json`, versioned with your code.
+- **History without conflicts.** Every change is one line appended to `.ambiflex/log.jsonl` (merged by Git with `merge=union`, so two sessions never conflict); the tree is replayed from it, and `.ambiflex/tree.json` is kept as a readable snapshot.
 - **Mobile.** The mobile app places no panel, so `/ambiflex` draws the tree inline in the transcript. For a persistent, touch-first view, Claude can publish an "Ambiflex" claude.ai page that mirrors the tree live and sends your taps back as comments.
 
 Claude fills the tree through the tools `tree_set_goal`, `tree_upsert`, `tree_merge`, `tree_get`, `tree_auto`.
