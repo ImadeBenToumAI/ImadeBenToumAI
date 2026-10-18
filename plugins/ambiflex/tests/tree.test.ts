@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { calibration, current, depths, emptyTree, eta, merge, minutes, nextOpen, nodeRef, outline, progress, renderSvg, upsert } from '../hooks/tree'
+import { assumedRate, calibration, costEstimate, current, depths, emptyTree, eta, merge, minutes, nextOpen, nodeRef, outline, progress, renderSvg, upsert } from '../hooks/tree'
 
 const T0 = '2026-10-18T00:00:00.000Z'
 
@@ -90,4 +90,22 @@ test('draws a valid SVG, escapes text, and clips long fields in the outline', ()
   expect(source.includes('<script>')).toBe(false)
   expect(source.length < 131072).toBe(true)
   expect(outline(t).includes('x'.repeat(201))).toBe(false)
+})
+
+test('draws top-down: children sit below their parents', () => {
+  const { source } = renderSvg(sample(), undefined)
+  const y = (id: string) => {
+    const m = source.match(new RegExp(`<text x="[\\d.]+" y="([\\d.]+)"[^>]*>[^<]*</text><text x="[\\d.]+" y="[\\d.]+"[^>]*>${id} `))
+    return m ? parseFloat(m[1]!) : NaN
+  }
+  expect(y('n1') < y('n2')).toBe(true)
+  expect(y('n2') < y('n4')).toBe(true)
+  expect(y('n2')).toBe(y('n3'))
+})
+
+test('projects the cost of what is left from the hourly rate', () => {
+  // 6h of remaining effort at $12/h, calibration ×1
+  expect(costEstimate(sample(), 12)).toBe(72)
+  expect(assumedRate('claude-opus-5-5')).toBe(12)
+  expect(assumedRate('claude-fable-5-1')).toBe(30)
 })

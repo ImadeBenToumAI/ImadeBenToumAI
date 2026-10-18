@@ -1,10 +1,10 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register, ResolveInput } from 'claude-code'
 
-import type { Status, Tab, Tree } from '../types'
+import type { Cost, Status, Tab, Tree } from '../types'
 import {
-  LENSES, LENS_LABEL, STATUSES, STATUS_LABEL, calibration, current, emptyTree, eta, human, merge, nextOpen,
-  nodeRef, outline, parseTree, progress, renderSvg, upsert,
+  LENSES, LENS_LABEL, STATUSES, STATUS_LABEL, assumedRate, calibration, costEstimate, current, emptyTree, eta, human,
+  merge, nextOpen, nodeRef, outline, parseTree, progress, renderSvg, upsert,
 } from './tree'
 
 const PLUGIN = 'ambiflex'
@@ -100,14 +100,18 @@ async function trackAgentEnd($: $, key: string, id: string | undefined) {
 async function startAuto($: $, maxTurns?: number, kickNow = false) {
   const t = await read($, tree)
   const started = await nowIso($)
-  const next = { ...t, auto: { on: true, startedAt: started, turns: 0, maxTurns: maxTurns ?? t.auto.maxTurns } }
+  const next = { ...t, auto: { on: true, startedAt: started, turns: 0, maxTurns: maxTurns ?? t.auto.maxTurns }, cost: { ...t.cost, spentUsd: 0 } }
   await save($, next)
+  warnedBudget = false
+  const cost = await trackCost($).catch(() => next.cost)
   const e = eta(next)
   const c = calibration(next)
   const expected = Math.round(e.critical * c.factor)
   const summary = `Auto mode ON. ${progress(next).total - progress(next).finished} nodes to go. ETA end to end: ${human(e.critical)} on the critical path (${e.path.join(' → ') || 'none'})`
     + (c.samples ? `, ×${c.factor} after calibration ≈ ${human(expected)}` : '')
-    + `. Stops after ${next.auto.maxTurns} turns, on your interruption, or with /ambiflex stop.`
+    + `. Estimated cost: $${cost.estimateUsd} at $${cost.ratePerHour}/h${cost.assumedRate ? ' (assumed for ' + (cost.model || 'this model') + ')' : ' (measured)'}`
+    + (options.budgetUsd > 0 ? `, budget $${options.budgetUsd}` : '')
+    + `. Stops after ${next.auto.maxTurns} turns, on your interruption, on the budget, or with /ambiflex stop.`
   $.ui.toast(summary)
   if (kickNow) await kick($).catch(() => undefined)
   return summary
@@ -206,6 +210,11 @@ async function drawTree($: $, e: ResolveInput) {
         {`ETA end to end: ${human(e2e.critical)} on the critical path · ${human(e2e.remaining)} of effort left`}
         {cal.samples ? ` · calibration ×${cal.factor} (${cal.samples} nodes)` : ''}
       </Text>
+      <Text dimColor>
+        {`Cost: $${t.cost.spentUsd.toFixed(2)} spent · est. $${t.cost.estimateUsd.toFixed(2)} to finish at $${t.cost.ratePerHour.toFixed(2)}/h${t.cost.assumedRate ? ' (assumed)' : ''}`}
+        {options.budgetUsd > 0 ? ` · budget $${options.budgetUsd}` : ''}
+        {t.cost.rateLimits.length ? ` · ${t.cost.rateLimits.map(r => `${r.kind} ${r.percentUsed}%`).join(' · ')}` : ''}
+      </Text>
       {t.auto.on && <Text color="yellow">{`Auto mode ON · turn ${t.auto.turns}/${t.auto.maxTurns}`}</Text>}
       {running.length > 0 && <Text color="red">{`Agents running: ${running.length}`}</Text>}
     </Box>
@@ -297,8 +306,76 @@ async function drawTree($: $, e: ResolveInput) {
   )
 }
 
-export const register: Register = on => {
+type Options = {
+  wakeWord: string
+  budgetUsd: number
+  alertPct: number
+  rateLimitAlertPct: number
+  hourlyRateUsd: number
+}
+
+let options: Options = { wakeWord: 'ambiflex', budgetUsd: 0, alertPct: 80, rateLimitAlertPct: 80, hourlyRateUsd: 0 }
+let sessionUsdAtStart = 0
+let sessionStartedAt = 0
+let warnedBudget = false
+const warnedLimits = new Set<string>()
+
+/** Reads the session's own cost ledger and rate limits; projects what is left; raises the alerts. */
+async function trackCost($: $): Promise<Cost> {
+  const t = await read($, tree)
+  const usage = await $.session.usage().catch(() => undefined)
+  const model = await $.session.model().catch(() => t.cost.model)
+  const sessionUsd = usage?.cost?.usd ?? t.cost.sessionUsd
+  const now = await $.clock.now()
+  const elapsedH = sessionStartedAt ? Math.max(0, now - sessionStartedAt) / 3600000 : 0
+  const spentThisSession = Math.max(0, sessionUsd - sessionUsdAtStart)
+  // Measure the rate once the session has run 5 minutes and spent something; assume before.
+  const measured = elapsedH >= 5 / 60 && spentThisSession > 0 ? spentThisSession / elapsedH : 0
+  const ratePerHour = options.hourlyRateUsd > 0 ? options.hourlyRateUsd : measured > 0 ? measured : assumedRate(model)
+  const assumed = options.hourlyRateUsd <= 0 && measured <= 0
+  const spentUsd = t.auto.startedAt ? Math.max(0, sessionUsd - (t.cost.sessionUsd - t.cost.spentUsd)) : t.cost.spentUsd
+  const rateLimits = (usage?.rateLimits ?? []).map(r => ({ kind: r.kind, percentUsed: Math.round(r.percentUsed), resetsAt: r.resetsAt }))
+  const cost: Cost = { spentUsd: +spentUsd.toFixed(2), sessionUsd: +sessionUsd.toFixed(2), ratePerHour: +ratePerHour.toFixed(2), assumedRate: assumed, estimateUsd: costEstimate(t, ratePerHour), model, rateLimits }
+  await save($, { ...t, cost })
+
+  if (options.budgetUsd > 0) {
+    const pct = (cost.spentUsd / options.budgetUsd) * 100
+    if (pct >= 100 && t.auto.on) {
+      await stopAuto($, `budget of $${options.budgetUsd} spent ($${cost.spentUsd})`)
+    } else if (pct >= options.alertPct && !warnedBudget) {
+      warnedBudget = true
+      $.ui.toast(`Ambiflex: $${cost.spentUsd} of the $${options.budgetUsd} budget spent (${Math.round(pct)}%). Est. $${cost.estimateUsd} more to finish.`)
+    }
+  }
+  for (const r of rateLimits) {
+    if (r.percentUsed >= options.rateLimitAlertPct && !warnedLimits.has(r.kind)) {
+      warnedLimits.add(r.kind)
+      $.ui.toast(`Ambiflex: ${r.kind} usage window at ${r.percentUsed}%${r.resetsAt ? `, resets ${r.resetsAt}` : ''}.`)
+    }
+  }
+  return cost
+}
+
+/** The wake word: "ambiflex …" (typed or dictated) in any session turns the method on for that prompt. */
+function wake(text: string): { verb: 'open' | 'auto' | 'stop' | 'status'; rest: string } | undefined {
+  const word = options.wakeWord.trim()
+  if (!word) return undefined
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const m = text.trim().match(new RegExp(`^(?:hey|ok|okay)?[\\s,]*${escaped}[\\s,:!.]*(.*)$`, 'is'))
+  if (!m) return undefined
+  const rest = (m[1] ?? '').trim()
+  if (/^(auto|run( the)?( strategy| plan)?|go|execute|start)\b/i.test(rest)) return { verb: 'auto', rest }
+  if (/^(stop|halt|pause)\b/i.test(rest)) return { verb: 'stop', rest }
+  if (/^(status|report|where are we)\b/i.test(rest)) return { verb: 'status', rest }
+  return { verb: 'open', rest }
+}
+
+export const register: Register = (on, opts) => {
+  options = { ...options, ...(opts as Partial<Options>) }
+
   on('session.start', async ($, e, next) => {
+    sessionStartedAt = await $.clock.now().catch(() => 0)
+    sessionUsdAtStart = (await $.session.usage().catch(() => undefined))?.cost?.usd ?? 0
     await load($)
     await refreshGit($)
     for (const [name, description, schema] of [
@@ -342,6 +419,22 @@ export const register: Register = on => {
     return { text: 'Reasoning tree: act on the nodes above, or steer me here.' }
   })
 
+  on('prompt.submit', async ($, e, next) => {
+    const w = wake(e.text)
+    if (!w || e.origin) return next(e)
+    if (w.verb === 'stop') {
+      await stopAuto($, 'stopped by wake word')
+      return next({ ...e, text: '[tree] Auto mode stopped. Report where we are with tree_get.' })
+    }
+    if (w.verb === 'status') return next({ ...e, text: '[tree] Report the plan status with tree_get: progress, ETA, cost, what needs my review.' })
+    openPane($).catch(() => undefined)
+    if (w.verb === 'auto') {
+      const summary = await startAuto($)
+      return next({ ...e, text: `[tree] ${summary} ${w.rest ? `Context: ${w.rest}. ` : ''}Read the tree with tree_get, confirm the plan is reviewed, then end this turn so the plugin hands you the first node.` })
+    }
+    return next({ ...e, text: w.rest ? `[tree] Apply the Ambiflex method (tree_get first, then goal and Altitude / Depth / Range tracks with estimates) to: ${w.rest}` : '[tree] Open the Ambiflex tree and read it with tree_get. Ask me what task to plan.' })
+  })
+
   on('prompt.compose', async ($, e, next) => {
     const composed = await next(e)
     return { sections: [...composed.sections, { id: `${PLUGIN}:method`, text: METHOD, scope: 'session' as const }] }
@@ -350,6 +443,7 @@ export const register: Register = on => {
   // Hand the next node over once a turn ends in auto mode.
   on('turn.complete', async ($, e, next) => {
     const ran = await next(e)
+    await trackCost($).catch(() => undefined)
     const t = await read($, tree).catch(() => undefined)
     if (t?.auto.on) {
       if (e.reason === 'answer') await kick($).catch(() => undefined)

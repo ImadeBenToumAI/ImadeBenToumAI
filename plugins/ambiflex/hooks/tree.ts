@@ -1,4 +1,4 @@
-import type { Auto, Lens, Status, Tree, TreeNode } from '../types'
+import type { Auto, Cost, Lens, Status, Tree, TreeNode } from '../types'
 
 export const LENSES: Lens[] = ['goal', 'altitude', 'depth', 'range', 'step']
 export const STATUSES: Status[] = ['proposed', 'exploring', 'review', 'done', 'validated', 'merged', 'abandoned']
@@ -31,8 +31,24 @@ const LENS_COLOR: Record<Lens, string> = {
 }
 
 export const DEFAULT_AUTO: Auto = { on: false, turns: 0, maxTurns: 40 }
+export const DEFAULT_COST: Cost = { spentUsd: 0, sessionUsd: 0, ratePerHour: 0, assumedRate: true, estimateUsd: 0, model: '', rateLimits: [] }
 
-export const emptyTree = (): Tree => ({ version: 1, goal: '', nodes: [], auto: { ...DEFAULT_AUTO } })
+/** Assumed $/hour of agentic work per model family, used until the session has measured its own rate. */
+export const ASSUMED_RATE_PER_HOUR: Record<string, number> = { fable: 30, mythos: 30, opus: 12, sonnet: 6, haiku: 0.6 }
+
+export function assumedRate(model: string): number {
+  const key = Object.keys(ASSUMED_RATE_PER_HOUR).find(k => model.toLowerCase().includes(k))
+  return key ? ASSUMED_RATE_PER_HOUR[key]! : 10
+}
+
+/** Projects the cost of what is left: critical-path hours × the measured (or assumed) hourly rate, scaled by calibration. */
+export function costEstimate(tree: Tree, ratePerHour: number): number {
+  const e = eta(tree)
+  const c = calibration(tree)
+  return +((e.remaining / 60) * ratePerHour * c.factor).toFixed(2)
+}
+
+export const emptyTree = (): Tree => ({ version: 1, goal: '', nodes: [], auto: { ...DEFAULT_AUTO }, cost: { ...DEFAULT_COST } })
 
 export function parseTree(text: string | undefined): Tree {
   if (!text) return emptyTree()
@@ -43,6 +59,7 @@ export function parseTree(text: string | undefined): Tree {
       goal: typeof raw.goal === 'string' ? raw.goal : '',
       nodes: Array.isArray(raw.nodes) ? raw.nodes : [],
       auto: { ...DEFAULT_AUTO, ...(raw.auto ?? {}) },
+      cost: { ...DEFAULT_COST, ...(raw.cost ?? {}) },
     }
   } catch {
     return emptyTree()
@@ -218,33 +235,39 @@ const esc = (text: string) =>
 
 const cut = (text: string, max: number) => (text.length > max ? `${text.slice(0, max - 1)}…` : text)
 
-/** Draws the DAG as SVG: columns = depth, colour = lens, style = status. */
+/** Draws the DAG as SVG, top-down like a Git graph: rows = depth, colour = lens, style = status; branches descend and merge. */
 export function renderSvg(tree: Tree, selected: string | undefined): { source: string; width: number; height: number } {
-  const W = 168, H = 54, GX = 40, GY = 16, PAD = 16
+  const W = 150, H = 48, GX = 18, GY = 40, PAD = 16, TOP = 30
   const d = depths(tree)
-  const columns = new Map<number, TreeNode[]>()
+  const rows = new Map<number, TreeNode[]>()
   for (const node of tree.nodes) {
-    const col = d.get(node.id) ?? 0
-    columns.set(col, [...(columns.get(col) ?? []), node])
+    const row = d.get(node.id) ?? 0
+    rows.set(row, [...(rows.get(row) ?? []), node])
   }
   const pos = new Map<string, { x: number; y: number }>()
-  let maxRows = 1
-  for (const [col, nodes] of columns) {
-    maxRows = Math.max(maxRows, nodes.length)
-    nodes.forEach((node, row) => pos.set(node.id, { x: PAD + col * (W + GX), y: PAD + 22 + row * (H + GY) }))
+  let maxCols = 1
+  for (const row of [...rows.keys()].sort((a, b) => a - b)) {
+    const nodes = rows.get(row)!
+    // Barycentre of the parents keeps branches straight and crossings rare.
+    const bary = (n: TreeNode) => {
+      const ps = n.parents.map(p => pos.get(p)).filter((p): p is { x: number; y: number } => !!p)
+      return ps.length ? ps.reduce((sum, p) => sum + p.x, 0) / ps.length : 0
+    }
+    if (row > 0) nodes.sort((a, b) => bary(a) - bary(b))
+    maxCols = Math.max(maxCols, nodes.length)
+    nodes.forEach((node, col) => pos.set(node.id, { x: PAD + col * (W + GX), y: PAD + TOP + row * (H + GY) }))
   }
-  const cols = Math.max(1, columns.size)
-  const width = PAD * 2 + cols * W + (cols - 1) * GX
-  const height = PAD * 2 + 22 + maxRows * H + (maxRows - 1) * GY + 22
+  const width = PAD * 2 + maxCols * W + (maxCols - 1) * GX
+  const height = PAD * 2 + TOP + rows.size * H + Math.max(0, rows.size - 1) * GY + 22
   const cur = current(tree)?.id
 
   const edges = tree.nodes.flatMap(node =>
     node.parents.map(parent => {
       const a = pos.get(parent), b = pos.get(node.id)
       if (!a || !b) return ''
-      const x1 = a.x + W, y1 = a.y + H / 2, x2 = b.x, y2 = b.y + H / 2, mx = (x1 + x2) / 2
+      const x1 = a.x + W / 2, y1 = a.y + H, x2 = b.x + W / 2, y2 = b.y, my = (y1 + y2) / 2
       const dashed = node.status === 'proposed' ? ' stroke-dasharray="5 4"' : ''
-      return `<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" fill="none" stroke="#94a3b8" stroke-width="1.6"${dashed}/>`
+      return `<path d="M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}" fill="none" stroke="#94a3b8" stroke-width="1.6"${dashed}/>`
     }),
   )
 
@@ -259,20 +282,20 @@ export function renderSvg(tree: Tree, selected: string | undefined): { source: s
     const meta = [node.id, STATUS_LABEL[node.status], node.estimate].filter(Boolean).join(' · ')
     return `<g${faded}><title>${esc(`${node.title}\n${node.summary ?? ''}`)}</title>`
       + `<rect x="${p.x}" y="${p.y}" width="${W}" height="${H}" rx="9" fill="${fill}" stroke="${color}" stroke-width="${strokeW}"${dash}/>`
-      + `<rect x="${p.x}" y="${p.y}" width="6" height="${H}" rx="3" fill="${color}"/>`
-      + `<text x="${p.x + 14}" y="${p.y + 22}" font-size="12.5" font-weight="600" fill="#0f172a" font-family="system-ui,sans-serif">${esc(badge + cut(node.title, 22))}</text>`
-      + `<text x="${p.x + 14}" y="${p.y + 40}" font-size="10.5" fill="#475569" font-family="system-ui,sans-serif">${esc(cut(meta, 30))}</text>`
-      + (node.agent ? `<circle cx="${p.x + W - 10}" cy="${p.y + 10}" r="4" fill="#ef4444"><animate attributeName="opacity" values="1;0.3;1" dur="1.4s" repeatCount="indefinite"/></circle>` : '')
+      + `<rect x="${p.x}" y="${p.y}" width="${W}" height="5" rx="2.5" fill="${color}"/>`
+      + `<text x="${p.x + 10}" y="${p.y + 22}" font-size="12" font-weight="600" fill="#0f172a" font-family="system-ui,sans-serif">${esc(badge + cut(node.title, 20))}</text>`
+      + `<text x="${p.x + 10}" y="${p.y + 38}" font-size="10" fill="#475569" font-family="system-ui,sans-serif">${esc(cut(meta, 28))}</text>`
+      + (node.agent ? `<circle cx="${p.x + W - 9}" cy="${p.y + 14}" r="4" fill="#ef4444"><animate attributeName="opacity" values="1;0.3;1" dur="1.4s" repeatCount="indefinite"/></circle>` : '')
       + '</g>'
   })
 
   const legend = LENSES.map((lens, i) =>
-    `<rect x="${PAD + i * 92}" y="${height - 18}" width="10" height="10" rx="2" fill="${LENS_COLOR[lens]}"/>`
-    + `<text x="${PAD + i * 92 + 14}" y="${height - 9}" font-size="10" fill="#475569" font-family="system-ui,sans-serif">${LENS_LABEL[lens]}</text>`,
+    `<rect x="${PAD + i * 72}" y="${height - 18}" width="10" height="10" rx="2" fill="${LENS_COLOR[lens]}"/>`
+    + `<text x="${PAD + i * 72 + 14}" y="${height - 9}" font-size="10" fill="#475569" font-family="system-ui,sans-serif">${LENS_LABEL[lens]}</text>`,
   ).join('')
 
-  const title = `<text x="${PAD}" y="${PAD + 8}" font-size="13" font-weight="700" fill="#0f172a" font-family="system-ui,sans-serif">${esc(cut(tree.goal || 'No goal yet', 70))}</text>`
-  const w = Math.max(width, PAD * 2 + LENSES.length * 92)
+  const title = `<text x="${PAD}" y="${PAD + 8}" font-size="13" font-weight="700" fill="#0f172a" font-family="system-ui,sans-serif">${esc(cut(tree.goal || 'No goal yet', 60))}</text>`
+  const w = Math.max(width, PAD * 2 + LENSES.length * 72)
   const source = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${height}" viewBox="0 0 ${w} ${height}">`
     + `<rect width="100%" height="100%" fill="#f8fafc" rx="10"/>${title}${edges.join('')}${boxes.join('')}${legend}</svg>`
   return { source, width: w, height }
@@ -294,6 +317,8 @@ export function outline(tree: Tree): string {
   return `Goal: ${cut(tree.goal || '(not set)', 200)}\nProgress: ${p.finished}/${p.total} (${p.pct}%), ${p.exploring} exploring, ${p.review} need review\n`
     + `ETA: critical path ${human(e.critical)} (${e.path.join(' → ') || 'none'}), remaining effort ${human(e.remaining)}`
     + (c.samples ? `, calibration ×${c.factor} over ${c.samples} nodes` : '')
+    + `\nCost: $${tree.cost.spentUsd.toFixed(2)} spent on this plan ($${tree.cost.sessionUsd.toFixed(2)} this session), est. $${tree.cost.estimateUsd.toFixed(2)} to finish at $${tree.cost.ratePerHour.toFixed(2)}/h${tree.cost.assumedRate ? ' (assumed for ' + (tree.cost.model || 'this model') + ', measured after the first turns)' : ' (measured)'}`
+    + (tree.cost.rateLimits.length ? `; limits: ${tree.cost.rateLimits.map(r => `${r.kind} ${r.percentUsed}%`).join(', ')}` : '')
     + `\n${auto}\n${lines.join('\n')}`
 }
 

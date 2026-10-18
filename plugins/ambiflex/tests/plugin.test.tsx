@@ -1,9 +1,9 @@
 import { expect, mock, test } from 'claude-code/testing'
 
-const flush = () => new Promise(r => setTimeout(r, 0))
+const flush = () => new Promise(r => (globalThis as any).setTimeout(r, 0))
 // The world beneath the plugin: nothing answers these in the kit, so each test lays its own bottom.
-const bottoms = (on: any) => {
-  on('ui.toast', async () => ({ value: undefined }))
+const bottoms = (on: any, toasts: string[] = []) => {
+  on('ui.toast', async (_$: any, e: any) => { toasts.push(e.text); return { value: undefined } })
   on('ui.status', async () => ({ value: undefined }))
   on('ui.open', async () => ({ value: { isPlaced: false, reason: 'no-surface' } }))
   on('prompt.compose', async () => ({ sections: [] }))
@@ -97,4 +97,34 @@ test('an interrupted turn switches auto mode off', async ($, on) => {
   await turn($, 'aborted')
   const got = await $.tool.call({ tool: 'mcp__ambiflex__tree_get' } as never)
   expect(String((got as { result?: unknown }).result)).toContain('Auto mode: off')
+})
+
+test('the wake word turns a dictated sentence into an Ambiflex prompt', async ($, on) => {
+  mock.clock(on)
+  bottoms(on)
+  on('fs.write', async () => ({ value: undefined }) as never)
+  const entered: string[] = []
+  on('prompt.submit', async (_$, e) => { entered.push(e.text); return { text: e.text } as never })
+  await $.prompt.submit({ text: 'Hey ambiflex, make the signup flow crash-free' })
+  expect(entered[0]).toContain('[tree] Apply the Ambiflex method')
+  expect(entered[0]).toContain('make the signup flow crash-free')
+  await $.prompt.submit({ text: 'just a normal prompt' })
+  expect(entered[1]).toBe('just a normal prompt')
+})
+
+test('"ambiflex auto" starts auto mode with an ETA and a cost estimate', async ($, on) => {
+  mock.clock(on)
+  const toasts: string[] = []
+  bottoms(on, toasts)
+  on('fs.write', async () => ({ value: undefined }) as never)
+  on('session.usage', async () => ({ value: { startedAt: 0, context: {}, rateLimits: [{ kind: 'five_hour', percentUsed: 85, source: 'api' }], cost: { usd: 1.5 } } }) as never)
+  on('session.model', async () => ({ value: 'claude-opus-5-5' }) as never)
+  const entered: string[] = []
+  on('prompt.submit', async (_$, e) => { entered.push(e.text); return { text: e.text } as never })
+  await $.tool.call({ tool: 'mcp__ambiflex__tree_upsert', title: 'A', lens: 'step', estimate: '2h' } as never)
+  await $.prompt.submit({ text: 'ambiflex auto' })
+  expect(entered[0]).toContain('Auto mode ON')
+  expect(entered[0]).toContain('ETA end to end: 2h')
+  expect(entered[0]).toContain('Estimated cost: $24 at $12/h (assumed for claude-opus-5-5)')
+  expect(toasts.some(t => t.includes('five_hour usage window at 85%'))).toBe(true)
 })

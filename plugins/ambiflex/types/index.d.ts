@@ -28,7 +28,22 @@ export type Auto = {
   maxTurns: number
 }
 
-export type Tree = { version: 1; goal: string; nodes: TreeNode[]; auto: Auto }
+export type Cost = {
+  /** USD spent since auto mode (or the goal) started, from the session's own cost ledger. */
+  spentUsd: number
+  /** USD the whole session has cost so far. */
+  sessionUsd: number
+  /** USD per hour of work: measured from this session once it has run a few minutes, assumed before. */
+  ratePerHour: number
+  assumedRate: boolean
+  /** Projected USD to finish what is left. */
+  estimateUsd: number
+  model: string
+  /** The rate-limit windows the API last reported (five_hour, seven_day, …), as percent used. */
+  rateLimits: { kind: string; percentUsed: number; resetsAt?: string }[]
+}
+
+export type Tree = { version: 1; goal: string; nodes: TreeNode[]; auto: Auto; cost: Cost }
 
 export type Tab = 'tree' | 'git'
 
