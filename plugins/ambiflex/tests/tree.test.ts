@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { assumedRate, autoTarget, calibration, costEstimate, current, depths, emptyTree, eta, merge, minutes, nextOpen, nodeRef, outline, progress, renderSvg, upsert } from '../hooks/tree'
+import { arrival, assumedRate, autoTarget, calibration, expectedEnd, spread, costEstimate, current, depths, emptyTree, eta, merge, minutes, nextOpen, nodeRef, outline, progress, renderSvg, upsert } from '../hooks/tree'
 
 const T0 = '2026-10-18T00:00:00.000Z'
 
@@ -111,4 +111,31 @@ test('projects the cost of what is left from the hourly rate', () => {
   expect(costEstimate(sample(), 12)).toBe(72)
   expect(assumedRate('claude-opus-5-5')).toBe(12)
   expect(assumedRate('claude-fable-5-1')).toBe(30)
+})
+
+test('three-point estimates give the PERT expected value and spread', () => {
+  expect(minutes('1h/2h/4h')).toBe(Math.round((60 + 480 + 240) / 6))
+  expect(spread('1h/2h/4h')).toBe(30)
+  expect(spread('2h')).toBe(0)
+})
+
+test('calibration ignores hand-set timestamps and placeholders', () => {
+  let t = sample()
+  // 4 minutes on a 1-day estimate (ratio 0.008): an artefact, not a measurement.
+  t = upsert(t, { title: 'Fake', lens: 'step', estimate: '1d', status: 'exploring' }, '2026-10-19T10:00:00.000Z').tree
+  t = upsert(t, { id: 'n5', status: 'done', verification: 'x' }, '2026-10-19T10:04:00.000Z').tree
+  expect(calibration(t)).toEqual({ factor: 1, samples: 0 })
+  // 3h on a 2h estimate: a measurement.
+  t = upsert(t, { id: 'n2', status: 'exploring' }, '2026-10-19T11:00:00.000Z').tree
+  t = upsert(t, { id: 'n2', status: 'done', verification: 'x' }, '2026-10-19T14:00:00.000Z').tree
+  expect(calibration(t)).toEqual({ factor: 1.5, samples: 1 })
+})
+
+test('arrival skips nights and weekends unless the run is continuous', () => {
+  const fri = new Date('2026-10-16T15:00:00.000Z') // Friday 15:00 UTC
+  expect(arrival(fri, 60).toISOString()).toBe('2026-10-16T16:00:00.000Z')
+  expect(arrival(fri, 4 * 60).toISOString()).toBe('2026-10-19T11:00:00.000Z') // 2h Friday, 2h Monday
+  expect(arrival(fri, 4 * 60, true).toISOString()).toBe('2026-10-16T19:00:00.000Z')
+  const end = expectedEnd(sample(), fri)
+  expect(end.minutes).toBe(240)
 })

@@ -73,9 +73,12 @@
       "summary": "Three-point estimates (o/p/pess), critical path (done), arrival date in the header, calibration factor applied to new estimates (measured; the ×0.03 artefact from hand-set timestamps must be excluded).",
       "estimate": "2d",
       "id": "n5",
-      "status": "proposed",
+      "status": "done",
       "createdAt": "2026-10-18T21:13:59.938Z",
-      "updatedAt": "2026-10-18T22:01:10.561Z"
+      "updatedAt": "2026-10-18T22:04:40.939Z",
+      "detail": "## Calibrated estimates (Phase 3)\n\n- Three-point estimates `1h/2h/4h` (optimistic / likely / pessimistic): expected value (o + 4p + pess) / 6, spread (pess − o) / 6. Single values still work.\n- Calibration = median of actual / estimated over finished nodes, counting only real measurements: ≥ 2 min of work on an estimate ≥ 30 min, ratio within [0.05, 20]. The ×0.03 artefact from hand-set timestamps is now excluded.\n- Expected end: the calibrated critical path turned into a calendar date (8h days, Monday to Friday; around the clock in auto mode), with ± from the three-point spread. Shown in the panel, in `tree_get` and when auto mode starts.\n- The method tells Claude to multiply new estimates by the reported calibration factor.\n\nJudge: `claude plugin test` 28/28.",
+      "verification": "claude plugin test: 28 pass (PERT value and spread of \"1h/2h/4h\", calibration rejects hand-set timestamps and keeps a 3h-on-2h measurement at ×1.5, arrival skips nights and weekends unless continuous)",
+      "finishedAt": "2026-10-18T22:04:40.939Z"
     },
     {
       "title": "Nodes ↔ branches ↔ PR",
@@ -119,30 +122,31 @@
       "updatedAt": "2026-10-18T21:14:04.181Z"
     },
     {
-      "title": "Stratégie adoption",
+      "title": "Adoption strategy",
       "lens": "goal",
       "status": "exploring",
       "parents": [
         "n1"
       ],
-      "summary": "Le but derrière le buzz : être la personne qui a montré comment un humain garde la main sur des agents. Le plugin est la preuve, pas le but.",
+      "summary": "Umbrella for n10-n15: settled when its children are. The plugin now treats goal nodes as umbrellas (their children are workable while they stay open) and works the plan in the order it was written.",
       "id": "n9",
       "createdAt": "2026-10-18T21:20:05.843Z",
-      "updatedAt": "2026-10-18T21:20:05.843Z",
+      "updatedAt": "2026-10-18T22:02:16.531Z",
       "startedAt": "2026-10-18T21:20:05.843Z"
     },
     {
-      "title": "Preuve avant promo",
+      "title": "Proof before promo",
       "lens": "altitude",
       "parents": [
-        "n9"
+        "n9",
+        "n5"
       ],
-      "summary": "Pas de lancement sans une démo réelle mesurée : un projet mené avec 3 pistes en parallèle, temps estimé vs réel, vidéo de 60 s.",
+      "summary": "No launch without a real measured demo: a project run with 3 tracks in parallel, estimated vs actual time, a 60-second video. Needs calibrated estimates (n5) first.",
       "estimate": "2w",
       "id": "n10",
       "status": "proposed",
       "createdAt": "2026-10-18T21:20:08.591Z",
-      "updatedAt": "2026-10-18T21:20:08.591Z"
+      "updatedAt": "2026-10-18T22:02:18.114Z"
     },
     {
       "title": "Contenu > plugin",

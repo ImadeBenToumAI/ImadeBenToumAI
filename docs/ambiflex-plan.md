@@ -52,7 +52,7 @@ See the table above. Judge: `claude plugin validate` and `claude plugin test` gr
 4. Several goals: each `tree_set_goal` opens a new tree. A "History" view lists past trees with estimated and actual time.
 5. **Judge:** a test merges two divergent logs (two sessions) and recovers both subtrees. A replay test: replaying the log gives exactly the current state.
 
-### Phase 3: calibrated estimates (n5): 1 / 2 / 3 d
+### Phase 3: calibrated estimates (n5): 1 / 2 / 3 d. Done in v0.3 (three-point estimates, expected end date, calibration that ignores artefacts).
 1. Three-point estimates, E = (o + 4p + pess) / 6.
 2. Critical path on the graph (already computed) and an arrival date in the header ("expected end: Thursday ± 1 d").
 3. Calibration: the median ratio actual / estimated over history (already computed) applied to new estimates by the method ("your estimates run ×1.6 optimistic").
