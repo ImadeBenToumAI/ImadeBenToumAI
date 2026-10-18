@@ -6,7 +6,7 @@ import { LOG_FILE, eventsFromSnapshot, parseLog, replay, serialize } from './log
 import type { Event } from './log'
 import {
   LENSES, LENS_LABEL, STATUSES, STATUS_LABEL, assumedRate, calibration, costEstimate, current, emptyTree, endLabel, eta, human,
-  merge, autoTarget, nextId, nodeRef, outline, parseTree, progress, renderSvg, upsert,
+  merge, autoTarget, nextId, nodeRef, parseReport, prune, rankChildren, outline, parseTree, progress, renderSvg, upsert,
 } from './tree'
 
 const PLUGIN = 'ambiflex'
@@ -35,8 +35,9 @@ For every task, apply Felix Rieseberg's be-ambitious method and record your reas
 4. When you spawn a subagent for a node, put #<id> in its description ("Explore the perf track #n4"): the plugin gives the node its own branch in a worktree under .ambiflex/worktrees/<id>, tells the agent to work there, and shows the node as explored by that agent. Validating such a node proposes the merge of its branch; never merge without the user's confirmation.
 5. Messages starting with [tree] come from the user's panel or page: do what they ask and update the tree.
 6. If a Git branch serves a node, fill in branch.
-7. Auto mode: when the tree says auto mode is ON, you are executing the plan without asking for approval. Work on the node the prompt names, verify it with an external judge, set done with its verification, and stop the turn. The plugin starts the next node by itself. Ask the user only when a node cannot be completed without a decision that is theirs (money, access, publishing to the outside).
-8. Mobile page: if ${ARTIFACT_FILE} exists it holds the URL of the "Ambiflex" claude.ai page. After each tree change, sync it: ArtifactData set, collection "tree", doc "current", file_path ".ambiflex/tree.json" (read the doc first and pass its version as if_version). Actions from that page arrive as artifact comments starting with [tree]: do them, update the tree, reply on the thread (ArtifactComments reply) and resolve it.
+7. Tree search: when a node has several competing tracks (children), give each a judge (judge field: the test, benchmark or metric that scores it), then call tree_explore on the parent: the plugin spawns one subagent per track in parallel, each in its own worktree branch, and records the SCORE each reports. Then prune (tree_prune) and merge the winner. Show the budget (agents × minutes) before calling tree_explore; in auto mode go ahead within the plan's budget.
+8. Auto mode: when the tree says auto mode is ON, you are executing the plan without asking for approval. Work on the node the prompt names, verify it with an external judge, set done with its verification, and stop the turn. The plugin starts the next node by itself. Ask the user only when a node cannot be completed without a decision that is theirs (money, access, publishing to the outside).
+9. Mobile page: if ${ARTIFACT_FILE} exists it holds the URL of the "Ambiflex" claude.ai page. After each tree change, sync it: ArtifactData set, collection "tree", doc "current", file_path ".ambiflex/tree.json" (read the doc first and pass its version as if_version). Actions from that page arrive as artifact comments starting with [tree]: do them, update the tree, reply on the thread (ArtifactComments reply) and resolve it.
 Keep the tree readable: short titles (under 24 characters), long text in detail.`
 
 const NODE_SCHEMA = {
@@ -52,6 +53,8 @@ const NODE_SCHEMA = {
     estimate: { type: 'string', description: 'Estimated effort: "30min", "2h", "3d", "1w", or three-point "1h/2h/4h" (optimistic/likely/pessimistic).' },
     verification: { type: 'string', description: 'The external judge that proved the result (test, command, metric). Required for done.' },
     branch: { type: 'string', description: 'Related Git branch.' },
+    judge: { type: 'string', description: 'The external judge this track declares: the test, benchmark or metric that scores it.' },
+    score: { type: 'number', description: 'The score the judge reported (higher is better).' },
   },
 } as const
 
@@ -389,11 +392,24 @@ async function drawTree($: $, e: ResolveInput) {
         <Button key="act-agent" onPress={() => steer(`Spawn a subagent to explore ${node.id} "${node.title}" (put #${node.id} in its description).`)}>
           Spawn agent
         </Button>
+        <Button key="act-explore" onPress={() => steer(`Tree search under ${node.id} "${node.title}": make sure each proposed child track has a judge, show me the budget (agents × minutes), then tree_explore ${node.id}.`)}>
+          Explore tracks
+        </Button>
         <Button key="act-abandon" onPress={async () => {
           await setStatus(node.id, 'abandoned')
           await steer(`I abandoned track ${node.id} "${node.title}". Do not pursue it; note the reason.`)
         }}>Abandon</Button>
       </Box>
+      {rankChildren(t, node.id).some(c => typeof c.score === 'number') && (
+        <Box flexDirection="column">
+          <Text dimColor>Tracks by score:</Text>
+          {rankChildren(t, node.id).map(c => <Text key={`rank-${c.id}`} dimColor>{`  ${c.id} ${c.title}: ${typeof c.score === 'number' ? c.score : '—'} · ${STATUS_LABEL[c.status]}`}</Text>)}
+          <Box flexDirection="row" gap={1}>
+            <Button key="act-prune" onPress={() => steer(`Prune the tracks under ${node.id} "${node.title}" (tree_prune): keep the best score, abandon the rest with the reason.`)}>Prune weak</Button>
+            <Button key="act-merge-best" variant="primary" onPress={() => steer(`Merge the best-scored track under ${node.id} "${node.title}" into it (tree_merge) and fold its results in.`)}>Merge best</Button>
+          </Box>
+        </Box>
+      )}
       {others.length > 0 && (
         <Box flexDirection="column">
           <Text dimColor>Merge into:</Text>
@@ -505,6 +521,18 @@ export const register: Register = (on, opts) => {
         properties: { sources: { type: 'array', items: { type: 'string' } }, into: { type: 'string' } },
         required: ['sources', 'into'],
       }],
+      ['tree_explore', 'Tree search: spawns one subagent per proposed child track of a parent node, in parallel, each in its own worktree branch, scored by the judge it declares.', {
+        type: 'object',
+        properties: {
+          parent: { type: 'string', description: 'The node whose proposed children are the tracks to explore.' },
+          maxAgents: { type: 'number', description: 'How many tracks to run at once (default 3).' },
+          minutes: { type: 'number', description: 'Time budget each agent is told to keep to (default 30).' },
+        },
+        required: ['parent'],
+      }],
+      ['tree_prune', 'Abandons every scored track under a parent but the best; returns the winner so you can merge it.', {
+        type: 'object', properties: { parent: { type: 'string' } }, required: ['parent'],
+      }],
       ['tree_auto', 'Turns auto mode on or off: the plugin then hands you the next open node after each turn, without asking the user.', {
         type: 'object',
         properties: { on: { type: 'boolean' }, maxTurns: { type: 'number', description: 'Turn budget (default 40).' } },
@@ -570,6 +598,17 @@ export const register: Register = (on, opts) => {
   // Hand the next node over once a turn ends in auto mode.
   on('turn.complete', async ($, e, next) => {
     const ran = await next(e)
+    if (e.agentId) {
+      // A spawned explorer reported: read its score, hand the node to review.
+      const t = await read($, tree).catch(() => undefined)
+      const { score, result, node: named } = parseReport(e.answer ?? '')
+      const node = t?.nodes.find(n => n.agent === e.agentId) ?? t?.nodes.find(n => n.id === named && n.status === 'exploring')
+      if (node) {
+        await commit($, { kind: 'upsert', input: { id: node.id, status: 'review', agent: '', ...(score !== undefined ? { score } : {}), ...(result ? { summary: result } : {}) } }).catch(() => undefined)
+        await update($, agents, list => list.filter(one => one !== e.agentId && one !== node.agent)).catch(() => undefined)
+      }
+      return ran
+    }
     await trackCost($).catch(() => undefined)
     const t = await read($, tree).catch(() => undefined)
     if (t?.auto.on) {
@@ -605,6 +644,40 @@ export const register: Register = (on, opts) => {
     const { sources = [], into = '' } = e as unknown as { sources?: string[]; into?: string }
     await commit($, { kind: 'merge', sources, into })
     return { result: `Merged ${sources.join(', ')} into ${into}.` }
+  })
+
+  on('tool.call', { tool: 'mcp__ambiflex__tree_explore' }, async ($, e) => {
+    const { parent, maxAgents = 3, minutes = 30 } = e as unknown as { parent?: string; maxAgents?: number; minutes?: number }
+    const t = await read($, tree)
+    const tracks = t.nodes.filter(n => parent && n.parents.includes(parent) && n.status === 'proposed').slice(0, Math.max(1, maxAgents))
+    if (!parent || tracks.length === 0) return { result: `No proposed track under ${parent ?? '(none)'}: create the tracks first (tree_upsert with parents and a judge).` }
+    const launched: string[] = []
+    const failed: string[] = []
+    for (const n of tracks) {
+      const wt = await branchFor($, n.id).catch(() => undefined)
+      const prompt = `Explore track ${n.id} "${n.title}" of the goal "${t.goal}".\n${n.summary ?? ''}\n${n.detail ?? ''}\n`
+        + (wt ? `Work in the Git worktree at ${wt.path} (branch ${wt.branch}): make your changes and commits there, never on the main checkout.\n` : '')
+        + `Judge: ${n.judge ?? 'declare the test, benchmark or metric that proves the result, then run it'}. Keep to about ${minutes} minutes.\n`
+        + `End your report with three lines: "NODE: ${n.id}", "RESULT: <one sentence>" and "SCORE: <number, higher is better, measured by the judge>".`
+      const spawned = await $.agent.spawn({ prompt, description: `Explore ${n.id} #${n.id}`, ...(wt ? { cwd: wt.path } : {}) } as never).catch((err: unknown) => { failed.push(`${n.id}: ${String(err)}`); return undefined })
+      if (!spawned || 'deny' in spawned) { failed.push(`${n.id}: ${spawned && 'deny' in spawned ? String(spawned.deny) : 'not started'}`); continue }
+      // The engine names the agent; a host that does not is matched by the NODE line of the report.
+      const agentId = ('agentId' in spawned && spawned.agentId) || `explorer:${n.id}`
+      await commit($, { kind: 'upsert', input: { id: n.id, status: 'exploring', agent: agentId } })
+      await update($, agents, list => [...list, agentId])
+      launched.push(`${n.id} (${n.title})`)
+    }
+    $.ui.toast(`Ambiflex: exploring ${launched.length} tracks in parallel, ${minutes} min each.`)
+    return { result: `Launched ${launched.length} agents (budget ${launched.length} × ${minutes} min): ${launched.join(', ')}. Scores land on the nodes as the agents report; then tree_prune ${parent} and merge the winner.${failed.length ? ` Not started: ${failed.join('; ')}` : ''}` }
+  })
+
+  on('tool.call', { tool: 'mcp__ambiflex__tree_prune' }, async ($, e) => {
+    const { parent = '' } = e as unknown as { parent?: string }
+    const t = await read($, tree)
+    const { kept, dropped } = prune(t, parent, await nowIso($))
+    for (const n of dropped) await commit($, { kind: 'upsert', input: { id: n.id, status: 'abandoned', summary: `${n.summary ?? ''} Pruned: scored ${n.score} against ${kept!.score} for ${kept!.id}.`.trim() } })
+    if (!kept) return { result: `No scored track under ${parent} yet.` }
+    return { result: `Kept ${kept.id} "${kept.title}" (score ${kept.score}); abandoned ${dropped.map(n => n.id).join(', ') || 'none'}. Merge ${kept.id} into ${parent} with tree_merge once its results are folded in.` }
   })
 
   on('tool.call', { tool: 'mcp__ambiflex__tree_auto' }, async ($, e) => {

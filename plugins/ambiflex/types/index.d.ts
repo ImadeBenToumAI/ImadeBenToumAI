@@ -15,6 +15,9 @@ export type TreeNode = {
   verification?: string
   agent?: string
   branch?: string
+  /** The external judge this track declares (a test, benchmark or metric) and the score it reported. */
+  judge?: string
+  score?: number
   startedAt?: string
   finishedAt?: string
   createdAt: string

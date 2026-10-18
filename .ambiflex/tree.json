@@ -222,13 +222,13 @@
   ],
   "auto": {
     "on": true,
-    "turns": 10,
+    "turns": 11,
     "maxTurns": 40,
     "startedAt": "2026-10-18T21:55:08.518Z"
   },
   "cost": {
-    "spentUsd": 34.97,
-    "sessionUsd": 34.97,
+    "spentUsd": 35.74,
+    "sessionUsd": 35.74,
     "ratePerHour": 30,
     "assumedRate": true,
     "estimateUsd": 15600,

@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { arrival, assumedRate, autoTarget, calibration, expectedEnd, spread, costEstimate, current, depths, emptyTree, eta, merge, minutes, nextOpen, nodeRef, outline, progress, renderSvg, upsert } from '../hooks/tree'
+import { arrival, assumedRate, autoTarget, calibration, expectedEnd, parseReport, prune, rankChildren, spread, costEstimate, current, depths, emptyTree, eta, merge, minutes, nextOpen, nodeRef, outline, progress, renderSvg, upsert } from '../hooks/tree'
 
 const T0 = '2026-10-18T00:00:00.000Z'
 
@@ -138,4 +138,18 @@ test('arrival skips nights and weekends unless the run is continuous', () => {
   expect(arrival(fri, 4 * 60, true).toISOString()).toBe('2026-10-16T19:00:00.000Z')
   const end = expectedEnd(sample(), fri)
   expect(end.minutes).toBe(240)
+})
+
+test('ranks tracks by score and parses an agent report', () => {
+  let t = upsert(emptyTree(), { title: 'P', lens: 'depth' }, T0).tree
+  t = upsert(t, { title: 'a', lens: 'step', parents: ['n1'], score: 0.2 }, T0).tree
+  t = upsert(t, { title: 'b', lens: 'step', parents: ['n1'], score: 0.8 }, T0).tree
+  t = upsert(t, { title: 'c', lens: 'step', parents: ['n1'] }, T0).tree
+  expect(rankChildren(t, 'n1').map(n => n.id)).toEqual(['n3', 'n2', 'n4'])
+  const p = prune(t, 'n1', T0)
+  expect(p.kept!.id).toBe('n3')
+  expect(p.dropped.map(n => n.id)).toEqual(['n2'])
+  expect(p.tree.nodes.find(n => n.id === 'n4')!.status).toBe('proposed')
+  expect(parseReport('blah\nNODE: n2\nRESULT: it works\nSCORE: 0.75')).toEqual({ score: 0.75, result: 'it works', node: 'n2' })
+  expect(parseReport('no score')).toEqual({ score: undefined, result: undefined, node: undefined })
 })

@@ -146,3 +146,32 @@ test('an agent spawned for #node gets a worktree branch and the node records it'
   await ui.press({ key: 'node-n1' } as never)
   expect(await ui.find({ text: /branch ambiflex\/n1-perf-track/ })).toBeTruthy()
 })
+
+test('tree search: one agent per track, scores land from their reports, prune keeps the best', async ($, on) => {
+  mock.clock(on)
+  bottoms(on)
+  const spawned: string[] = []
+  on('agent.spawn', async (_$, e) => { spawned.push((e as { prompt: string }).prompt); return { model: 'm', agentId: `agent-${spawned.length}` } as never })
+  await $.tool.call({ tool: 'mcp__ambiflex__tree_upsert', title: 'Speed up parse', lens: 'depth' } as never)
+  await $.tool.call({ tool: 'mcp__ambiflex__tree_upsert', title: 'Cache', lens: 'step', parents: ['n1'], judge: 'bench.js ms' } as never)
+  await $.tool.call({ tool: 'mcp__ambiflex__tree_upsert', title: 'Rewrite', lens: 'step', parents: ['n1'], judge: 'bench.js ms' } as never)
+  await $.tool.call({ tool: 'mcp__ambiflex__tree_upsert', title: 'Streaming', lens: 'step', parents: ['n1'], judge: 'bench.js ms' } as never)
+  const launched = await $.tool.call({ tool: 'mcp__ambiflex__tree_explore', parent: 'n1', maxAgents: 2, minutes: 10 } as never)
+  expect(String((launched as { result?: unknown }).result)).toContain('Launched 2 agents (budget 2 × 10 min)')
+  expect(spawned.length).toBe(2)
+  expect(spawned[0]).toContain('Judge: bench.js ms')
+  expect(spawned[0]).toContain('.ambiflex/worktrees/n2')
+
+  await $.turn.complete({ answer: 'Done.\nNODE: n2\nRESULT: cache halves parse time\nSCORE: 0.9', durationMs: 1, isAborted: false, turnId: 'a1', reason: 'answer', agentId: 'agent-1' } as never)
+  await $.turn.complete({ answer: 'NODE: n3\nRESULT: rewrite is slower\nSCORE: 0.4', durationMs: 1, isAborted: false, turnId: 'a2', reason: 'answer', agentId: 'agent-2' } as never)
+  let text = String((await $.tool.call({ tool: 'mcp__ambiflex__tree_get' } as never) as { result?: unknown }).result)
+  expect(text).toContain('n2 [Step · needs review] Cache')
+  expect(text).toContain('score 0.9')
+  expect(text).toContain('score 0.4')
+
+  const pruned = await $.tool.call({ tool: 'mcp__ambiflex__tree_prune', parent: 'n1' } as never)
+  expect(String((pruned as { result?: unknown }).result)).toContain('Kept n2 "Cache" (score 0.9); abandoned n3')
+  text = String((await $.tool.call({ tool: 'mcp__ambiflex__tree_get' } as never) as { result?: unknown }).result)
+  expect(text).toContain('n3 [Step · abandoned] Rewrite')
+  expect(text).toContain('n4 [Step · proposed] Streaming')
+})

@@ -373,6 +373,8 @@ export function outline(tree: Tree): string {
     `- ${n.id} [${LENS_LABEL[n.lens]} · ${STATUS_LABEL[n.status]}${n.estimate ? ` · ${n.estimate}` : ''}] ${cut(n.title, 80)}`
     + (n.parents.length ? ` ← ${n.parents.join(', ')}` : '')
     + (n.agent ? ` (agent: ${cut(n.agent, 40)})` : '')
+    + (typeof n.score === 'number' ? ` score ${n.score}` : '')
+    + (n.judge ? ` judge: ${cut(n.judge, 60)}` : '')
     + (n.summary ? `\n    ${cut(n.summary, 200)}` : ''),
   )
   const auto = tree.auto.on ? `Auto mode: ON (turn ${tree.auto.turns}/${tree.auto.maxTurns}, started ${tree.auto.startedAt ?? '?'})` : 'Auto mode: off'
@@ -390,6 +392,30 @@ export function endLabel(tree: Tree, now: Date): string {
   if (end.minutes <= 0) return 'nothing left'
   const day = end.at.toISOString().slice(0, 10)
   return `${day}${end.plusMinus ? ` ± ${human(end.plusMinus)}` : ''} (${human(end.minutes)} of work${tree.auto.on ? ', around the clock' : ', 8h days'})`
+}
+
+/** A parent's tracks ranked by score (unscored last), abandoned ones left out. */
+export function rankChildren(tree: Tree, parent: string): TreeNode[] {
+  return tree.nodes
+    .filter(n => n.parents.includes(parent) && n.status !== 'abandoned')
+    .sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity) || a.createdAt.localeCompare(b.createdAt))
+}
+
+/** Abandons every scored track under `parent` but the best; unscored tracks are kept. */
+export function prune(tree: Tree, parent: string, now: string): { tree: Tree; kept?: TreeNode; dropped: TreeNode[] } {
+  const ranked = rankChildren(tree, parent).filter(n => typeof n.score === 'number')
+  const [kept, ...rest] = ranked
+  let next = tree
+  for (const n of rest) next = upsert(next, { id: n.id, status: 'abandoned', summary: `${n.summary ?? ''} Pruned: scored ${n.score} against ${kept!.score} for ${kept!.id}.`.trim() }, now).tree
+  return { tree: next, kept, dropped: rest }
+}
+
+/** Reads a score and a verdict line out of an agent's report: "SCORE: 0.82" and "RESULT: …". */
+export function parseReport(answer: string): { score?: number; result?: string; node?: string } {
+  const score = answer.match(/SCORE:\s*(-?[\d.]+)/i)
+  const result = answer.match(/RESULT:\s*(.+)/i)
+  const node = answer.match(/NODE:\s*([A-Za-z0-9_-]+)/i)
+  return { score: score ? parseFloat(score[1]!) : undefined, result: result ? result[1]!.trim().slice(0, 300) : undefined, node: node ? node[1] : undefined }
 }
 
 /** Finds `#n12` in an agent description to attach the agent to a node. */
