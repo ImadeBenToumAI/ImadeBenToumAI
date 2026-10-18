@@ -18,12 +18,15 @@
       "parents": [
         "n1"
       ],
-      "summary": "8 défauts réels : injection via tree.json, « terminé » sans vérification, agents homonymes, cache du prompt, conflits Git…",
-      "estimate": "1 j",
+      "summary": "Fixed in v0.2: prompt injection via tree.json, done without proof, homonymous agents, prompt cache, panel at every session, tests.",
+      "estimate": "1d",
       "id": "n2",
-      "status": "proposed",
+      "status": "done",
       "createdAt": "2026-10-18T21:13:55.539Z",
-      "updatedAt": "2026-10-18T21:13:55.539Z"
+      "updatedAt": "2026-10-18T21:44:32.001088Z",
+      "verification": "claude plugin validate + 17 tests green (v0.2)",
+      "startedAt": "2026-10-18T21:30:00.000Z",
+      "finishedAt": "2026-10-18T21:44:32.001088Z"
     },
     {
       "title": "Nœuds vérifiables",
@@ -31,12 +34,15 @@
       "parents": [
         "n2"
       ],
-      "summary": "Aucun nœud « terminé » sans preuve d'un juge externe (test, commande, métrique). Nouveau statut « à valider ».",
-      "estimate": "1 j",
+      "summary": "Done in v0.2: \"done\" requires a verification, otherwise the node stays at \"needs review\".",
+      "estimate": "1d",
       "id": "n3",
-      "status": "proposed",
+      "status": "done",
       "createdAt": "2026-10-18T21:13:56.986Z",
-      "updatedAt": "2026-10-18T21:13:56.986Z"
+      "updatedAt": "2026-10-18T21:44:32.001088Z",
+      "verification": "claude plugin validate + 17 tests green (v0.2)",
+      "startedAt": "2026-10-18T21:30:00.000Z",
+      "finishedAt": "2026-10-18T21:44:32.001088Z"
     },
     {
       "title": "Journal d'événements",
@@ -45,7 +51,7 @@
         "n2"
       ],
       "summary": "Remplacer tree.json par un journal append-only fusionnable par Git : historique complet, plusieurs sessions, passé et futur.",
-      "estimate": "2 j",
+      "estimate": "2d",
       "id": "n4",
       "status": "proposed",
       "createdAt": "2026-10-18T21:13:58.485Z",
@@ -58,7 +64,7 @@
         "n4"
       ],
       "summary": "Comparer estimé et réel, puis corriger les prochaines estimations (PERT + chemin critique = date d'arrivée).",
-      "estimate": "2 j",
+      "estimate": "2d",
       "id": "n5",
       "status": "proposed",
       "createdAt": "2026-10-18T21:13:59.938Z",
@@ -71,7 +77,7 @@
         "n4"
       ],
       "summary": "Une piste = une branche ou un worktree ; Valider = fusionner la PR. Le raisonnement et le code avancent ensemble.",
-      "estimate": "2 j",
+      "estimate": "2d",
       "id": "n6",
       "status": "proposed",
       "createdAt": "2026-10-18T21:14:01.387Z",
@@ -84,7 +90,7 @@
         "n3"
       ],
       "summary": "Comme un moteur d'échecs : agents en parallèle sur les pistes, score par juge, élagage des pistes faibles.",
-      "estimate": "3 j",
+      "estimate": "3d",
       "id": "n7",
       "status": "proposed",
       "createdAt": "2026-10-18T21:14:02.883Z",
@@ -99,7 +105,7 @@
         "n7"
       ],
       "summary": "Dépôt dédié, installation à l'échelle utilisateur, dossier pour le répertoire officiel des plugins.",
-      "estimate": "1 j",
+      "estimate": "1d",
       "id": "n8",
       "status": "proposed",
       "createdAt": "2026-10-18T21:14:04.181Z",
@@ -124,7 +130,7 @@
         "n9"
       ],
       "summary": "Pas de lancement sans une démo réelle mesurée : un projet mené avec 3 pistes en parallèle, temps estimé vs réel, vidéo de 60 s.",
-      "estimate": "2 sem",
+      "estimate": "2w",
       "id": "n10",
       "status": "proposed",
       "createdAt": "2026-10-18T21:20:08.591Z",
@@ -137,7 +143,7 @@
         "n9"
       ],
       "summary": "Ce que font les gens remarqués : ils publient leurs apprentissages, pas leur outil. Une série d'articles « ce que j'ai appris en pilotant des agents » avec données.",
-      "estimate": "4 sem",
+      "estimate": "4w",
       "id": "n11",
       "status": "proposed",
       "createdAt": "2026-10-18T21:20:11.140Z",
@@ -150,7 +156,7 @@
         "n9"
       ],
       "summary": "Méthodes du lancement produit : répertoire officiel, awesome-lists, Show HN, réponse directe au tutoriel de Felix, communauté Claude Code.",
-      "estimate": "2 sem",
+      "estimate": "2w",
       "id": "n12",
       "status": "proposed",
       "createdAt": "2026-10-18T21:20:13.737Z",
@@ -164,7 +170,7 @@
         "n4"
       ],
       "summary": "Le buzz ne fait pas l'usage : l'historique et la calibration des estimations (phase 2-3) rendent le plugin plus utile à chaque projet. C'est ce qui retient.",
-      "estimate": "3 sem",
+      "estimate": "3w",
       "id": "n13",
       "status": "proposed",
       "createdAt": "2026-10-18T21:20:17.249Z",
@@ -177,7 +183,7 @@
         "n12"
       ],
       "summary": "Juge externe : étoiles, installs du marketplace, issues ouvertes par d'autres, PR externes. Objectif à 90 j : 500 étoiles, 10 contributeurs.",
-      "estimate": "1 sem",
+      "estimate": "1w",
       "id": "n14",
       "status": "proposed",
       "createdAt": "2026-10-18T21:20:19.877Z",
@@ -192,11 +198,16 @@
         "n12"
       ],
       "summary": "Jour J : vidéo + article + dépôt public + post qui répond à Felix. Tout prêt avant, publié le même matin.",
-      "estimate": "1 j",
+      "estimate": "1d",
       "id": "n15",
       "status": "proposed",
       "createdAt": "2026-10-18T21:20:22.882Z",
       "updatedAt": "2026-10-18T21:20:22.882Z"
     }
-  ]
+  ],
+  "auto": {
+    "on": false,
+    "turns": 0,
+    "maxTurns": 40
+  }
 }

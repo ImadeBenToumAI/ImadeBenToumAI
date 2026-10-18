@@ -1,0 +1,304 @@
+import type { Auto, Lens, Status, Tree, TreeNode } from '../types'
+
+export const LENSES: Lens[] = ['goal', 'altitude', 'depth', 'range', 'step']
+export const STATUSES: Status[] = ['proposed', 'exploring', 'review', 'done', 'validated', 'merged', 'abandoned']
+export const FINISHED: Status[] = ['done', 'validated', 'merged']
+
+export const LENS_LABEL: Record<Lens, string> = {
+  goal: 'Goal',
+  altitude: 'Altitude',
+  depth: 'Depth',
+  range: 'Range',
+  step: 'Step',
+}
+
+export const STATUS_LABEL: Record<Status, string> = {
+  proposed: 'proposed',
+  exploring: 'exploring',
+  review: 'needs review',
+  done: 'done',
+  validated: 'validated',
+  merged: 'merged',
+  abandoned: 'abandoned',
+}
+
+const LENS_COLOR: Record<Lens, string> = {
+  goal: '#7c5cff',
+  altitude: '#0ea5e9',
+  depth: '#16a34a',
+  range: '#f59e0b',
+  step: '#64748b',
+}
+
+export const DEFAULT_AUTO: Auto = { on: false, turns: 0, maxTurns: 40 }
+
+export const emptyTree = (): Tree => ({ version: 1, goal: '', nodes: [], auto: { ...DEFAULT_AUTO } })
+
+export function parseTree(text: string | undefined): Tree {
+  if (!text) return emptyTree()
+  try {
+    const raw = JSON.parse(text) as Partial<Tree>
+    return {
+      version: 1,
+      goal: typeof raw.goal === 'string' ? raw.goal : '',
+      nodes: Array.isArray(raw.nodes) ? raw.nodes : [],
+      auto: { ...DEFAULT_AUTO, ...(raw.auto ?? {}) },
+    }
+  } catch {
+    return emptyTree()
+  }
+}
+
+export type NodeInput = Partial<Omit<TreeNode, 'createdAt' | 'updatedAt'>> & { id?: string }
+
+export function nextId(tree: Tree): string {
+  let n = tree.nodes.length + 1
+  while (tree.nodes.some(node => node.id === `n${n}`)) n++
+  return `n${n}`
+}
+
+/** Creates or updates a node. `done` without `verification` is downgraded to `review`. */
+export function upsert(tree: Tree, input: NodeInput, now: string): { tree: Tree; node: TreeNode } {
+  const existing = input.id ? tree.nodes.find(node => node.id === input.id) : undefined
+  const known = new Set(tree.nodes.map(node => node.id))
+  const parents = (input.parents ?? existing?.parents ?? []).filter(id => known.has(id) && id !== input.id)
+  const lens = input.lens && LENSES.includes(input.lens) ? input.lens : existing?.lens ?? 'step'
+  let status = input.status && STATUSES.includes(input.status) ? input.status : existing?.status ?? 'proposed'
+  const verification = input.verification ?? existing?.verification
+  if (status === 'done' && !verification) status = 'review'
+  const node: TreeNode = {
+    ...existing,
+    ...stripUndefined(input),
+    id: existing?.id ?? input.id ?? nextId(tree),
+    title: clip(input.title ?? existing?.title ?? 'Untitled', 80),
+    lens,
+    status,
+    parents,
+    createdAt: existing?.createdAt ?? now,
+    updatedAt: now,
+  }
+  if (status === 'exploring' && !node.startedAt) node.startedAt = now
+  if (FINISHED.includes(status) && !node.finishedAt) node.finishedAt = now
+  const nodes = existing
+    ? tree.nodes.map(one => (one.id === node.id ? node : one))
+    : [...tree.nodes, node]
+  return { tree: { ...tree, nodes }, node }
+}
+
+/** Merges branches: sources become `merged` and parents of the target node. */
+export function merge(tree: Tree, sources: string[], into: string, now: string): Tree {
+  const target = tree.nodes.find(node => node.id === into)
+  if (!target) return tree
+  const valid = sources.filter(id => id !== into && tree.nodes.some(node => node.id === id))
+  return {
+    ...tree,
+    nodes: tree.nodes.map(node => {
+      if (node.id === into) {
+        return { ...node, parents: [...new Set([...node.parents, ...valid])], updatedAt: now }
+      }
+      if (valid.includes(node.id)) return { ...node, status: 'merged', finishedAt: node.finishedAt ?? now, updatedAt: now }
+      return node
+    }),
+  }
+}
+
+function stripUndefined<T extends object>(value: T): Partial<T> {
+  return Object.fromEntries(Object.entries(value).filter(([, v]) => v !== undefined)) as Partial<T>
+}
+
+const clip = (text: string, max: number) => (text.length > max ? `${text.slice(0, max - 1)}…` : text)
+
+/** Depth = longest path from a root. */
+export function depths(tree: Tree): Map<string, number> {
+  const byId = new Map(tree.nodes.map(node => [node.id, node]))
+  const memo = new Map<string, number>()
+  const visit = (id: string, seen: Set<string>): number => {
+    const hit = memo.get(id)
+    if (hit !== undefined) return hit
+    const node = byId.get(id)
+    if (!node || seen.has(id)) return 0
+    seen.add(id)
+    const parents = node.parents.filter(p => byId.has(p))
+    const d = parents.length === 0 ? 0 : 1 + Math.max(...parents.map(p => visit(p, seen)))
+    memo.set(id, d)
+    return d
+  }
+  for (const node of tree.nodes) visit(node.id, new Set())
+  return memo
+}
+
+export function progress(tree: Tree): { total: number; finished: number; exploring: number; review: number; pct: number } {
+  const live = tree.nodes.filter(node => node.status !== 'abandoned')
+  const finished = live.filter(node => FINISHED.includes(node.status)).length
+  const exploring = live.filter(node => node.status === 'exploring').length
+  const review = live.filter(node => node.status === 'review').length
+  return { total: live.length, finished, exploring, review, pct: live.length ? Math.round((finished / live.length) * 100) : 0 }
+}
+
+/** Current node: needs review first, then the latest exploring one, then the next proposed one. */
+export function current(tree: Tree): TreeNode | undefined {
+  const byTime = [...tree.nodes].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+  return byTime.find(n => n.status === 'review') ?? byTime.find(n => n.status === 'exploring') ?? nextOpen(tree)
+}
+
+/** Next node to work on in auto mode: a proposed node whose parents are all finished (or merged/abandoned). */
+export function nextOpen(tree: Tree): TreeNode | undefined {
+  const byId = new Map(tree.nodes.map(n => [n.id, n]))
+  const settled = (id: string) => {
+    const p = byId.get(id)
+    return !p || FINISHED.includes(p.status) || p.status === 'abandoned'
+  }
+  const candidates = tree.nodes.filter(n => n.status === 'proposed' && n.parents.every(settled))
+  const d = depths(tree)
+  return candidates.sort((a, b) => (d.get(a.id) ?? 0) - (d.get(b.id) ?? 0) || a.createdAt.localeCompare(b.createdAt))[0]
+}
+
+/** "30min" | "2h" | "3d" | "1w" (also "2 h", "1.5d") → minutes; 0 when absent. A day is 8 h, a week 5 days. */
+export function minutes(estimate: string | undefined): number {
+  if (!estimate) return 0
+  const m = estimate.match(/([\d.,]+)\s*(min|m|h|d|j|w|sem)\b/i)
+  if (!m) return 0
+  const n = parseFloat(m[1]!.replace(',', '.'))
+  const unit = m[2]!.toLowerCase()
+  const factor = unit === 'min' || unit === 'm' ? 1 : unit === 'h' ? 60 : unit === 'd' || unit === 'j' ? 480 : 2400
+  return Math.round(n * factor)
+}
+
+export function human(min: number): string {
+  if (min <= 0) return '—'
+  if (min < 60) return `${Math.round(min)}min`
+  if (min < 480) return `${+(min / 60).toFixed(1)}h`
+  if (min < 2400) return `${+(min / 480).toFixed(1)}d`
+  return `${+(min / 2400).toFixed(1)}w`
+}
+
+/** End-to-end estimate: the critical path (longest chain of remaining estimates) and the remaining sum. */
+export function eta(tree: Tree): { critical: number; remaining: number; path: string[] } {
+  const byId = new Map(tree.nodes.map(n => [n.id, n]))
+  const open = (n: TreeNode) => !FINISHED.includes(n.status) && n.status !== 'abandoned'
+  const memo = new Map<string, { min: number; path: string[] }>()
+  const visit = (id: string, seen: Set<string>): { min: number; path: string[] } => {
+    const hit = memo.get(id)
+    if (hit) return hit
+    const n = byId.get(id)
+    if (!n || seen.has(id)) return { min: 0, path: [] }
+    seen.add(id)
+    let best = { min: 0, path: [] as string[] }
+    for (const p of n.parents) {
+      const r = visit(p, seen)
+      if (r.min > best.min) best = r
+    }
+    const own = open(n) ? minutes(n.estimate) : 0
+    const out = { min: best.min + own, path: own ? [...best.path, n.id] : best.path }
+    memo.set(id, out)
+    return out
+  }
+  let critical = { min: 0, path: [] as string[] }
+  for (const n of tree.nodes) {
+    const r = visit(n.id, new Set())
+    if (r.min > critical.min) critical = r
+  }
+  const remaining = tree.nodes.filter(open).reduce((a, n) => a + minutes(n.estimate), 0)
+  return { critical: critical.min, remaining, path: critical.path }
+}
+
+/** Actual minutes spent on finished nodes vs. their estimates: a calibration factor (1 = on time, 2 = twice as long). */
+export function calibration(tree: Tree): { factor: number; samples: number } {
+  const pairs = tree.nodes
+    .filter(n => n.startedAt && n.finishedAt && minutes(n.estimate) > 0)
+    .map(n => (Date.parse(n.finishedAt!) - Date.parse(n.startedAt!)) / 60000 / minutes(n.estimate))
+    .filter(r => Number.isFinite(r) && r > 0)
+    .sort((a, b) => a - b)
+  if (pairs.length === 0) return { factor: 1, samples: 0 }
+  return { factor: +pairs[Math.floor(pairs.length / 2)]!.toFixed(2), samples: pairs.length }
+}
+
+const esc = (text: string) =>
+  text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+
+const cut = (text: string, max: number) => (text.length > max ? `${text.slice(0, max - 1)}…` : text)
+
+/** Draws the DAG as SVG: columns = depth, colour = lens, style = status. */
+export function renderSvg(tree: Tree, selected: string | undefined): { source: string; width: number; height: number } {
+  const W = 168, H = 54, GX = 40, GY = 16, PAD = 16
+  const d = depths(tree)
+  const columns = new Map<number, TreeNode[]>()
+  for (const node of tree.nodes) {
+    const col = d.get(node.id) ?? 0
+    columns.set(col, [...(columns.get(col) ?? []), node])
+  }
+  const pos = new Map<string, { x: number; y: number }>()
+  let maxRows = 1
+  for (const [col, nodes] of columns) {
+    maxRows = Math.max(maxRows, nodes.length)
+    nodes.forEach((node, row) => pos.set(node.id, { x: PAD + col * (W + GX), y: PAD + 22 + row * (H + GY) }))
+  }
+  const cols = Math.max(1, columns.size)
+  const width = PAD * 2 + cols * W + (cols - 1) * GX
+  const height = PAD * 2 + 22 + maxRows * H + (maxRows - 1) * GY + 22
+  const cur = current(tree)?.id
+
+  const edges = tree.nodes.flatMap(node =>
+    node.parents.map(parent => {
+      const a = pos.get(parent), b = pos.get(node.id)
+      if (!a || !b) return ''
+      const x1 = a.x + W, y1 = a.y + H / 2, x2 = b.x, y2 = b.y + H / 2, mx = (x1 + x2) / 2
+      const dashed = node.status === 'proposed' ? ' stroke-dasharray="5 4"' : ''
+      return `<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" fill="none" stroke="#94a3b8" stroke-width="1.6"${dashed}/>`
+    }),
+  )
+
+  const boxes = tree.nodes.map(node => {
+    const p = pos.get(node.id)!
+    const color = LENS_COLOR[node.lens]
+    const faded = node.status === 'abandoned' ? ' opacity="0.35"' : node.status === 'merged' ? ' opacity="0.6"' : ''
+    const dash = node.status === 'proposed' ? ' stroke-dasharray="5 4"' : ''
+    const strokeW = node.id === selected ? 3.5 : node.id === cur ? 2.5 : 1.5
+    const fill = FINISHED.includes(node.status) ? `${color}22` : '#ffffff'
+    const badge = node.status === 'validated' ? '✓ ' : node.status === 'merged' ? '⤵ ' : node.status === 'review' ? '◆ ' : node.status === 'exploring' ? '● ' : ''
+    const meta = [node.id, STATUS_LABEL[node.status], node.estimate].filter(Boolean).join(' · ')
+    return `<g${faded}><title>${esc(`${node.title}\n${node.summary ?? ''}`)}</title>`
+      + `<rect x="${p.x}" y="${p.y}" width="${W}" height="${H}" rx="9" fill="${fill}" stroke="${color}" stroke-width="${strokeW}"${dash}/>`
+      + `<rect x="${p.x}" y="${p.y}" width="6" height="${H}" rx="3" fill="${color}"/>`
+      + `<text x="${p.x + 14}" y="${p.y + 22}" font-size="12.5" font-weight="600" fill="#0f172a" font-family="system-ui,sans-serif">${esc(badge + cut(node.title, 22))}</text>`
+      + `<text x="${p.x + 14}" y="${p.y + 40}" font-size="10.5" fill="#475569" font-family="system-ui,sans-serif">${esc(cut(meta, 30))}</text>`
+      + (node.agent ? `<circle cx="${p.x + W - 10}" cy="${p.y + 10}" r="4" fill="#ef4444"><animate attributeName="opacity" values="1;0.3;1" dur="1.4s" repeatCount="indefinite"/></circle>` : '')
+      + '</g>'
+  })
+
+  const legend = LENSES.map((lens, i) =>
+    `<rect x="${PAD + i * 92}" y="${height - 18}" width="10" height="10" rx="2" fill="${LENS_COLOR[lens]}"/>`
+    + `<text x="${PAD + i * 92 + 14}" y="${height - 9}" font-size="10" fill="#475569" font-family="system-ui,sans-serif">${LENS_LABEL[lens]}</text>`,
+  ).join('')
+
+  const title = `<text x="${PAD}" y="${PAD + 8}" font-size="13" font-weight="700" fill="#0f172a" font-family="system-ui,sans-serif">${esc(cut(tree.goal || 'No goal yet', 70))}</text>`
+  const w = Math.max(width, PAD * 2 + LENSES.length * 92)
+  const source = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${height}" viewBox="0 0 ${w} ${height}">`
+    + `<rect width="100%" height="100%" fill="#f8fafc" rx="10"/>${title}${edges.join('')}${boxes.join('')}${legend}</svg>`
+  return { source, width: w, height }
+}
+
+/** Text outline of the tree, for the model. Field values are clipped so the file cannot smuggle long instructions. */
+export function outline(tree: Tree): string {
+  if (tree.nodes.length === 0) return '(empty tree)'
+  const p = progress(tree)
+  const e = eta(tree)
+  const c = calibration(tree)
+  const lines = tree.nodes.map(n =>
+    `- ${n.id} [${LENS_LABEL[n.lens]} · ${STATUS_LABEL[n.status]}${n.estimate ? ` · ${n.estimate}` : ''}] ${cut(n.title, 80)}`
+    + (n.parents.length ? ` ← ${n.parents.join(', ')}` : '')
+    + (n.agent ? ` (agent: ${cut(n.agent, 40)})` : '')
+    + (n.summary ? `\n    ${cut(n.summary, 200)}` : ''),
+  )
+  const auto = tree.auto.on ? `Auto mode: ON (turn ${tree.auto.turns}/${tree.auto.maxTurns}, started ${tree.auto.startedAt ?? '?'})` : 'Auto mode: off'
+  return `Goal: ${cut(tree.goal || '(not set)', 200)}\nProgress: ${p.finished}/${p.total} (${p.pct}%), ${p.exploring} exploring, ${p.review} need review\n`
+    + `ETA: critical path ${human(e.critical)} (${e.path.join(' → ') || 'none'}), remaining effort ${human(e.remaining)}`
+    + (c.samples ? `, calibration ×${c.factor} over ${c.samples} nodes` : '')
+    + `\n${auto}\n${lines.join('\n')}`
+}
+
+/** Finds `#n12` in an agent description to attach the agent to a node. */
+export function nodeRef(text: string, tree: Tree): string | undefined {
+  const ids = [...text.matchAll(/#([A-Za-z0-9_-]+)/g)].map(m => m[1]!)
+  return ids.find(id => tree.nodes.some(node => node.id === id))
+}
