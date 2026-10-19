@@ -121,14 +121,14 @@
         "n6",
         "n7"
       ],
-      "summary": "Published from the profile repository (marketplace \"imade\"); user-scope install verified from an empty environment. Submission notes in docs/ambiflex-submission.md. The dedicated repository is deferred to launch day (user's choice: needs a repo created by hand).",
+      "summary": "Published from the profile repository (marketplace \"imade\"); v0.3.1 merged to main (PR #7) and re-verified by a fresh-HOME install. The prepared standalone repository copy is synced to v0.3.1 with the film; the dedicated repository is created on launch day.",
       "estimate": "1d",
       "id": "n8",
       "status": "done",
       "createdAt": "2026-10-18T21:14:04.181Z",
-      "updatedAt": "2026-10-18T22:31:59.807Z",
+      "updatedAt": "2026-10-19T00:11:13.838Z",
       "startedAt": "2026-10-18T22:26:18.659Z",
-      "verification": "Fresh-HOME install from the README command: `claude plugin marketplace add ImadeBenToumAI/ImadeBenToumAI` then `claude plugin install ambiflex@imade` succeeds; `claude plugin list` shows ambiflex@imade at user scope",
+      "verification": "Fresh-HOME install after merging PR #7: claude plugin list shows ambiflex@imade 0.3.1 enabled (2026-10-19).",
       "finishedAt": "2026-10-18T22:31:59.807Z"
     },
     {
@@ -344,11 +344,11 @@
     "startedAt": "2026-10-18T21:55:08.518Z"
   },
   "cost": {
-    "spentUsd": 77.85,
-    "sessionUsd": 77.85,
-    "ratePerHour": 23.93,
-    "assumedRate": false,
-    "estimateUsd": 206.79,
+    "spentUsd": 80.91,
+    "sessionUsd": 80.91,
+    "ratePerHour": 30,
+    "assumedRate": true,
+    "estimateUsd": 259.2,
     "model": "claude-fable-5-1",
     "rateLimits": [
       {
