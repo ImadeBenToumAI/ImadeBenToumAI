@@ -316,7 +316,7 @@
       "estimate": "2h/3h/5h",
       "judge": "hyperframes check passes; every frame fills 1920×1080 (no empty half); voice and cues align within 0.3 s; user watches it.",
       "createdAt": "2026-10-18T23:47:45.801Z",
-      "updatedAt": "2026-10-19T00:02:09.075Z",
+      "updatedAt": "2026-10-19T00:08:10.158Z",
       "startedAt": "2026-10-18T23:47:45.801Z",
       "verification": "hyperframes lint: 0 errors; 13 snapshot frames reviewed by eye (every scene fills 1920×1080, cursor lands on Validate); render exit 0; ffprobe: h264 1920×1080 + aac, 104.0 s; volumedetect mean -24.5 dB, max -1.3 dB. User has not yet watched it.",
       "finishedAt": "2026-10-19T00:02:09.075Z"
