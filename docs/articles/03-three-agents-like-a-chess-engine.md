@@ -1,6 +1,6 @@
 # Running three agents like a chess engine
 
-*Draft 1. Imade Ben Toum. Drafted by Claude from the session log; every number below is in the repository. To be edited and signed by me.*
+*Draft 2, scores and timings from the tree and the benchmark. Imade Ben Toum. Drafted by Claude from the session's own data (tree, log, commits); every number is traceable to the repository. Links to github.com/ImadeBenToumAI/ambiflex go live on launch day (the code is in the profile repository until then). To be edited and signed by me.*
 
 A chess engine does not ask one grandmaster for the best move. It explores several candidate lines at once, scores each with the same evaluation, cuts the weak ones early and spends its remaining time on the strong ones. Felix Rieseberg's tutorial lists "use an outside judge" and "challenge assumptions" among the ways to be more ambitious with a model. Put together, they are a search, and a search wants parallelism.
 
@@ -30,6 +30,8 @@ I did nothing for the next twenty minutes except read what came back.
 | n18, single pass | 6.66 | 4.41 | 76 |
 | n19, shaped rows | 7.3 | 7.24 | 46 |
 
+![Node n16 open in the panel: three tracks, three scores, the shaped-rows track kept and merged](../../assets/launch/05-search.png)
+
 Two things to notice. The agents' numbers and mine differ (container noise; n18's agent saw 50-82 ms over six runs and reported its best). The ranking does not. That is what an outside judge buys you: not a precise number, but a comparison you can trust because you ran it yourself, on branches you did not write.
 
 ## Prune, merge
@@ -38,9 +40,11 @@ Two things to notice. The agents' numbers and mine differ (container noise; n18'
 
 Then the winner's branch was merged into the main checkout and the benchmark run once more there: **44 ms, 7.4× faster**. The two losing worktrees were removed; their branches remain.
 
+![The benchmark on the merged code: 334 ms before, 44.0 ms after, SCORE 7.38](../../assets/launch/06-bench.png)
+
 ## What this cost
 
-About $8 of model time for the three agents, on top of a $35 evening. Fifteen minutes of wall clock for the exploration, versus the forty-five or so I would have spent trying the three ideas in sequence, with the usual temptation to stop after the first one that worked (which would have been the 3× one).
+Roughly $8 of model time for the three agents, out of the $57 the whole evening cost. Fifteen minutes of wall clock for the exploration, versus the forty-five or so I would have spent trying the three ideas in sequence, with the usual temptation to stop after the first one that worked (which would have been the 3× one).
 
 ## What makes it work, and what does not
 
@@ -54,4 +58,4 @@ And it needs a budget shown before launch. Three agents is cheap. Thirty is a bi
 
 ## Try it
 
-The run above is reproducible: `demo/parse.js` and `demo/bench.js` are in github.com/ImadeBenToumAI/ImadeBenToumAI, and the tree that recorded the three scores is in `.ambiflex/log.jsonl`. Install the plugin, create three child nodes with a judge, and call `tree_explore` on the parent. Then run the judge yourself before you merge anything. That last step is the whole method.
+The run above is reproducible: `demo/parse.js` and `demo/bench.js` are in github.com/ImadeBenToumAI/ambiflex, and the tree that recorded the three scores is `.ambiflex/log.jsonl` in github.com/ImadeBenToumAI/ImadeBenToumAI. Install the plugin, create three child nodes with a judge, and call `tree_explore` on the parent. Then run the judge yourself before you merge anything. That last step is the whole method.

@@ -166,12 +166,12 @@
       "parents": [
         "n9"
       ],
-      "summary": "Four article drafts written from the session's real data (docs/articles/01-04): done-means-nothing, estimates ×0.01, three agents like a chess engine, plugin API field notes. Waiting on the user's edits and signature; publishing is theirs.",
+      "summary": "Second drafts of the four articles (docs/articles/01-04), fact-checked against the tree, the log and the auto-run report: commit-timestamp timings, one cost figure ($57), panel stills embedded, links to the dedicated repository, the wide-tree panel lesson added to the field notes. Article 1 opens on a placeholder for the author's own anecdote. Waiting on the user's edits and signature.",
       "estimate": "4w",
       "id": "n11",
       "status": "review",
       "createdAt": "2026-10-18T21:20:11.140Z",
-      "updatedAt": "2026-10-18T22:33:23.610Z",
+      "updatedAt": "2026-10-19T00:14:36.782Z",
       "startedAt": "2026-10-18T22:26:18.644Z"
     },
     {
@@ -344,11 +344,11 @@
     "startedAt": "2026-10-18T21:55:08.518Z"
   },
   "cost": {
-    "spentUsd": 82.04,
-    "sessionUsd": 82.04,
-    "ratePerHour": 30,
-    "assumedRate": true,
-    "estimateUsd": 259.2,
+    "spentUsd": 84.29,
+    "sessionUsd": 84.29,
+    "ratePerHour": 31.63,
+    "assumedRate": false,
+    "estimateUsd": 273.32,
     "model": "claude-fable-5-1",
     "rateLimits": [
       {
