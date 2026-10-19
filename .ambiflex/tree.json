@@ -224,12 +224,13 @@
         "n11",
         "n12"
       ],
-      "summary": "Same-morning order in docs/launch-kit.md §7: dedicated repo, article 1, reply to Felix with the video, Show HN, awesome lists, communities. Waits on the user: video recorded, articles signed, repo created.",
+      "summary": "Launch day started 19 Oct. Step 1 (create github.com/ImadeBenToumAI/ambiflex) is blocked for Claude: the session's GitHub credential is scoped to the profile repository (403 on repo creation). Everything else is staged: prepared repository copy at v0.3.1 with its own marketplace manifest, articles at draft 2, film, launch texts. Once the user creates the empty public repo, Claude pushes and switches the links.",
       "estimate": "1d",
       "id": "n15",
-      "status": "proposed",
+      "status": "exploring",
       "createdAt": "2026-10-18T21:20:22.882Z",
-      "updatedAt": "2026-10-18T22:41:23.543Z"
+      "updatedAt": "2026-10-19T00:16:52.002Z",
+      "startedAt": "2026-10-19T00:16:52.002Z"
     },
     {
       "title": "Demo: CSV parse",
@@ -344,11 +345,11 @@
     "startedAt": "2026-10-18T21:55:08.518Z"
   },
   "cost": {
-    "spentUsd": 84.29,
-    "sessionUsd": 84.29,
-    "ratePerHour": 31.63,
+    "spentUsd": 84.89,
+    "sessionUsd": 84.89,
+    "ratePerHour": 34.89,
     "assumedRate": false,
-    "estimateUsd": 273.32,
+    "estimateUsd": 301.47,
     "model": "claude-fable-5-1",
     "rateLimits": [
       {
