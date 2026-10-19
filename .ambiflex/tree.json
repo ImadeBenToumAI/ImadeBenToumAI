@@ -1,21 +1,21 @@
 {
   "version": 1,
-  "goal": "Faire d'ambition-tree le plugin Claude Code de référence pour piloter des agents, assez remarqué pour qu'Anthropic s'y intéresse",
+  "goal": "Make Ambiflex the reference Claude Code plugin for steering agents: noticed, used, and improved by others",
   "nodes": [
     {
-      "title": "v0.1 livrée",
+      "title": "v0.1 shipped",
       "lens": "goal",
       "status": "done",
-      "summary": "Panneau, graphe SVG, actions, outils, onglet Git. 9 tests passent.",
+      "summary": "Panel, SVG graph, actions, tools, Git tab. 9 tests passing.",
       "id": "n1",
       "parents": [],
       "verification": "migrated from snapshot (unverified)",
       "createdAt": "2026-10-18T21:13:54.189Z",
-      "updatedAt": "2026-10-18T21:13:54.189Z",
+      "updatedAt": "2026-10-18T23:10:36.728Z",
       "finishedAt": "2026-10-18T21:13:54.189Z"
     },
     {
-      "title": "Corriger la v0.1",
+      "title": "Fix v0.1",
       "lens": "depth",
       "parents": [
         "n1"
@@ -28,10 +28,10 @@
       "startedAt": "2026-10-18T21:30:00.000Z",
       "finishedAt": "2026-10-18T21:44:32.001088Z",
       "createdAt": "2026-10-18T21:13:55.539Z",
-      "updatedAt": "2026-10-18T21:44:32.001088Z"
+      "updatedAt": "2026-10-18T23:10:37.397Z"
     },
     {
-      "title": "Nœuds vérifiables",
+      "title": "Verifiable nodes",
       "lens": "depth",
       "parents": [
         "n2"
@@ -44,7 +44,7 @@
       "startedAt": "2026-10-18T21:30:00.000Z",
       "finishedAt": "2026-10-18T21:44:32.001088Z",
       "createdAt": "2026-10-18T21:13:56.986Z",
-      "updatedAt": "2026-10-18T21:44:32.001088Z"
+      "updatedAt": "2026-10-18T23:10:37.948Z"
     },
     {
       "title": "Event log",
@@ -102,12 +102,12 @@
       "parents": [
         "n3"
       ],
-      "summary": "tree_explore / tree_prune built and unit-tested (31 tests). Real end-to-end judge pending: the CSV-parse demo under n16 must run with 3 parallel explorers and the winner must beat the baseline on demo/bench.js.",
+      "summary": "tree_explore spawns one agent per track in its own branch; scores land from their reports; tree_prune keeps the best. Proven on demo/parse.js: three explorers, winner merged at 7.4×.",
       "estimate": "3d",
       "id": "n7",
       "status": "done",
       "createdAt": "2026-10-18T21:14:02.883Z",
-      "updatedAt": "2026-10-18T22:13:00.239Z",
+      "updatedAt": "2026-10-18T23:15:37.784Z",
       "startedAt": "2026-10-18T22:10:54.432Z",
       "detail": "## Tree search (Phase 5)\n\n- `tree_explore <parent>`: one subagent per proposed child track, in parallel, each in its own worktree branch, with the budget (agents × minutes) echoed before launch. Each agent is told to end with `NODE:` / `RESULT:` / `SCORE:` measured by the track's declared judge.\n- Scores land on the nodes as the agents finish (matched by agent id, or by the NODE line on hosts that do not name agents); the nodes move to *needs review*.\n- `tree_prune <parent>`: keeps the best-scored track, abandons the others with the reason. The panel ranks the tracks and offers *Prune weak* and *Merge best*.\n- Real run: demo/parse.js, baseline 334 ms. Shaped rows (7×) beat single pass (4-7×) and no-spread (3×). Merged: 44 ms on main.\n\nJudge: the independent benchmark on the merged code, and 31 tests.",
       "verification": "End-to-end run on a real problem: tree_explore spawned 3 agents in their own worktree branches, each reported NODE/RESULT/SCORE through its judge, scores landed on the nodes automatically, tree_prune kept the best, the winner merged into the main branch benches at 7.38× (independent measurement); plus 31 unit tests",
@@ -134,14 +134,14 @@
     {
       "title": "Adoption strategy",
       "lens": "goal",
-      "status": "exploring",
+      "status": "review",
       "parents": [
         "n1"
       ],
-      "summary": "Umbrella for n10-n15: settled when its children are. The plugin now treats goal nodes as umbrellas (their children are workable while they stay open) and works the plan in the order it was written.",
+      "summary": "Umbrella for n10-n15. Everything Claude could do alone is done; the open children wait on the user (video, articles, posting, launch-day repo). End-to-end report in docs/auto-run-report.md.",
       "id": "n9",
       "createdAt": "2026-10-18T21:20:05.843Z",
-      "updatedAt": "2026-10-18T22:02:16.531Z",
+      "updatedAt": "2026-10-18T23:01:40.241Z",
       "startedAt": "2026-10-18T21:20:05.843Z"
     },
     {
@@ -151,12 +151,14 @@
         "n9",
         "n5"
       ],
-      "summary": "The measured demo exists (3 agents, 334 → 44 ms, independent benchmark). The 60-second video script is in docs/launch-kit.md, shot by shot; the recording is the user's.",
+      "summary": "Launch film redone: desktop, dark mode, 1920×1080, 75 s, nine shots following docs/launch-video-script.md. Masters in assets/launch (clean + subtitled), SRT, stills. Voice: user generates narration.mp3 from the script, then node tools/launch-video/mux.js.",
       "estimate": "2w",
       "id": "n10",
-      "status": "review",
+      "status": "done",
       "createdAt": "2026-10-18T21:20:08.591Z",
-      "updatedAt": "2026-10-18T22:41:04.342Z"
+      "updatedAt": "2026-10-18T23:38:07.270Z",
+      "verification": "Recorded with tools/launch-video/record-desktop.js; nine stills reviewed by eye (captions clear of the docked sheet); ffprobe duration 76.4 s. Voice not yet laid over.",
+      "finishedAt": "2026-10-18T23:20:29.931Z"
     },
     {
       "title": "Content over plugin",
@@ -301,6 +303,38 @@
       "startedAt": "2026-10-18T22:11:14.999Z",
       "score": 7.3,
       "finishedAt": "2026-10-18T22:12:49.747Z"
+    },
+    {
+      "id": "n20",
+      "title": "HyperFrames film",
+      "lens": "step",
+      "status": "done",
+      "parents": [
+        "n10"
+      ],
+      "summary": "Rebuild the launch film as a HyperFrames composition: animated 3D logo intro, full-frame shots with camera moves, typed terminals, Kokoro English narration timed per cue, title card. Rendered at 1920×1080 30 fps.",
+      "estimate": "2h/3h/5h",
+      "judge": "hyperframes check passes; every frame fills 1920×1080 (no empty half); voice and cues align within 0.3 s; user watches it.",
+      "createdAt": "2026-10-18T23:47:45.801Z",
+      "updatedAt": "2026-10-19T00:08:10.158Z",
+      "startedAt": "2026-10-18T23:47:45.801Z",
+      "verification": "hyperframes lint: 0 errors; 13 snapshot frames reviewed by eye (every scene fills 1920×1080, cursor lands on Validate); render exit 0; ffprobe: h264 1920×1080 + aac, 104.0 s; volumedetect mean -24.5 dB, max -1.3 dB. User has not yet watched it.",
+      "finishedAt": "2026-10-19T00:02:09.075Z"
+    },
+    {
+      "id": "n21",
+      "title": "Panel on wide trees",
+      "lens": "step",
+      "status": "done",
+      "parents": [
+        "n13"
+      ],
+      "summary": "Feedback from a second project (25 nodes, 22 under one parent): the pane's graph shrank to one unreadable row and the picture is not clickable. Fixed in v0.3.1: rows wrap at six columns, finished leaves fold into a chip per parent on trees over 16 nodes (toggle), hint that selection is from the list.",
+      "estimate": "1h/2h/4h",
+      "verification": "claude plugin validate passes; claude plugin test 32/32 incl. a new test on a 24-child row (width < 1200, folded chip, selected node unfolds); rendered preview of a 25-node tree of the same shape reviewed by eye.",
+      "createdAt": "2026-10-19T00:07:56.932Z",
+      "updatedAt": "2026-10-19T00:07:56.932Z",
+      "finishedAt": "2026-10-19T00:07:56.932Z"
     }
   ],
   "auto": {
@@ -310,16 +344,16 @@
     "startedAt": "2026-10-18T21:55:08.518Z"
   },
   "cost": {
-    "spentUsd": 55.69,
-    "sessionUsd": 55.69,
-    "ratePerHour": 23.58,
+    "spentUsd": 77.85,
+    "sessionUsd": 77.85,
+    "ratePerHour": 23.93,
     "assumedRate": false,
-    "estimateUsd": 260.29,
+    "estimateUsd": 206.79,
     "model": "claude-fable-5-1",
     "rateLimits": [
       {
         "kind": "five_hour",
-        "percentUsed": 2,
+        "percentUsed": 3,
         "resetsAt": "2026-10-19T01:20:00.000Z"
       },
       {

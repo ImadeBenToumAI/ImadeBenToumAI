@@ -2,22 +2,32 @@
 
 Everything launch day needs, ready to paste. Drafted by Claude from the session's real data; Imade edits, signs and posts. Nothing here is published by the plugin or by Claude.
 
-## 1. The 60-second video (node n10)
+## 1. The launch film (node n10)
 
-Screen recording of the Ambiflex page on a phone (or the desktop pane), no voice-over, captions only. One take per shot; cut together in any editor. Total: 60 s.
+**Rendered, voiced, ready to post:** `assets/launch/ambiflex-film.mp4` (1920×1080, 30 fps, 104 s, dark mode, English narration). Subtitles are in `assets/launch/ambiflex-film.srt` for platforms that take a separate file; one still per scene is in `assets/launch/0N-*.png`.
 
-| # | Seconds | What is on screen | Caption |
+Built with [HyperFrames](https://github.com/heygen-com/hyperframes) (HTML compositions rendered frame by frame) in `tools/launch-video/film`. The narration is synthesized locally with Kokoro (open-weights text-to-speech, voice `am_michael`); the lines are in `tools/launch-video/voice.py` and `docs/launch-video-script.md`.
+
+| # | Seconds | Scene | Narration (short) |
 |---|---|---|---|
-| 1 | 0-5 | The tree, top-down, 19 nodes. Goal at the top. | "This is a plan Claude Code is executing on its own." |
-| 2 | 5-12 | Tap n7 "Tree search". The sheet opens: summary, verification, buttons. | "Every node needs a proof before it counts as done." |
-| 3 | 12-20 | Tap n16 "Demo: CSV parse". Scroll to *Tracks by score*: n19 7.3, n18 6.66, n17 3.15. | "Three agents tried three ideas in parallel. Same benchmark." |
-| 4 | 20-28 | Terminal: `BASELINE_MS=334 node demo/bench.js` → `ms: 44.0 / SCORE: 7.38`. | "I ran the benchmark myself. 334 ms → 44 ms." |
-| 5 | 28-36 | Header: progress 59 %, ETA, *Expected end*, cost line "$48 spent · est. $300 to finish · five_hour 2 %". | "Cost and ETA, before and during. Not after." |
-| 6 | 36-44 | Tap n11, press **Validate**. Toast "Sent to Claude". | "I steer from my phone. Claude replies in the session." |
-| 7 | 44-52 | Terminal: the plugin's hand-over line "[tree] Auto mode, turn 14/40. Work on n7…" | "After each turn, the plugin hands Claude the next node. No approval needed." |
-| 8 | 52-60 | README install line. | "`/plugin install ambiflex --marketplace ImadeBenToumAI/ImadeBenToumAI`. Felix Rieseberg's method, as a panel." |
+| 1 | 0-6 | Animated logo: four nodes fly in, edges draw, the tree swings in 3D, the wordmark rises. | "Ambiflex. An ambitious reasoning tree for Claude Code." |
+| 2 | 6-13 | The whole tree, 3D push-in. | "A plan Claude Code executed on its own. Nineteen nodes. One evening." |
+| 3 | 13-25 | The top of the tree; Altitude / Depth / Range labels pop in. | "It follows Felix Rieseberg's method…" |
+| 4 | 25-37 | n7 opens; the verification line is highlighted. | "A node is not done because the model says so…" |
+| 5 | 37-48 | n16 opens; three score chips, the winner in green. | "Three agents, three ways to speed up a parser…" |
+| 6 | 48-59 | Typed terminal: the benchmark, `SCORE: 7.38`. | "Then I ran the benchmark myself. 334 ms down to 44." |
+| 7 | 59-72 | Dive into the header (spent, estimate, ETA, windows), pull back, calibration chip. | "Cost and time are on screen before and during…" |
+| 8 | 72-85 | Typed terminal: auto mode's hand-over lines. | "In auto mode, after each turn, the plugin hands Claude the next open node…" |
+| 9 | 85-94 | n11 opens; the cursor travels to Validate and clicks; toast "Sent to Claude". | "And I steer from anywhere…" |
+| 10 | 94-104 | Logo, install line, repository. | "Ambiflex. Open source, one line to install…" |
 
-Recording tips: light theme, 1080×1920 for the phone cut, hide notifications, pause one second on each caption. Export a 1920×1080 version for X and HN (the tree is wider than tall on desktop).
+**Re-render after a tree change** (Chromium, ffmpeg, Node 22, Python 3):
+
+```
+NODE_PATH=<playwright> node tools/launch-video/capture.js tools/launch-video/film/assets/img   # stills from .ambiflex/tree.json
+python3 tools/launch-video/voice.py --models <dir with kokoro-v1.0.onnx + voices-v1.0.bin>      # narration .wav files
+cd tools/launch-video/film && npx hyperframes@0.8.173 render . -o renders/ambiflex-film.mp4 -q high
+```
 
 ## 2. Reply to Felix Rieseberg's tutorial on X (node n12, first)
 
