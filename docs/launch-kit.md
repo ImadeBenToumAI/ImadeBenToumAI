@@ -90,6 +90,22 @@ One post, not two.
 >
 > Install: `/plugin install ambiflex --marketplace ImadeBenToumAI/ambiflex`. 60-second video and the tree-search numbers in the README.
 
+## 5b. RoboNuggets (node n12)
+
+RoboNuggets is Jay E's paid AI-automation community on Skool (about 1,300 members), with a free YouTube channel and a blog on robonuggets.us. Skool has no posting API, so nothing publishes there automatically: one post in the community feed by hand, and one message to Jay E to pitch a feature. Both below. Post after Show HN, the same afternoon as Discord and Reddit.
+
+**Community post (Skool feed, category "Wins" or "Show your work"):**
+
+> I turned Felix Rieseberg's "How to be more ambitious" tutorial into a Claude Code plugin. The plan is a tree you can steer from your phone; a node is not "done" until it names the test or metric that proved it; three agents explore three tracks in parallel, scored by one benchmark, and the winner merges. It ran its own launch plan in one evening for $57.
+>
+> 104-second film and one-line install: github.com/ImadeBenToumAI/ambiflex
+>
+> Question for the automation people here: the auto mode hands Claude the next node after each turn without asking, and stops on a budget, a turn limit or a decision that is mine. What stops would you add?
+
+**Message to Jay E (DM on Skool or hello@ address on the site), for a feature or a video:**
+
+> Hi Jay, I built Ambiflex, an open-source Claude Code plugin that runs Felix Rieseberg's ambition method as a live tree, with an auto mode that executes a reviewed plan and a tree search that scores parallel agents with one benchmark. The numbers are in the repo (334 ms to 44 ms on the demo, verified independently; a "2-day" node done in 10 minutes). If you would like to cover it, I can record a walkthrough for the community or do a live session. Film and repo: github.com/ImadeBenToumAI/ambiflex
+
 ## 6. French post, LinkedIn or a francophone community (node n12)
 
 > Felix Rieseberg (Anthropic) a publié un tutoriel sur l'ambition avec les modèles : Altitude, Profondeur, Étendue. Je l'ai pris au mot et j'en ai fait un panneau dans Claude Code.
@@ -107,7 +123,7 @@ Same morning, in this order, nothing earlier:
 3. Reply to Felix with the video (section 2).
 4. Show HN (section 3), first comment within a minute.
 5. Awesome-list PRs (section 4).
-6. Discord / Reddit (section 5), French post (section 6) in the afternoon.
+6. Discord / Reddit (section 5), RoboNuggets (section 5b), French post (section 6) in the afternoon.
 7. Answer every comment within 24 h; record each piece of feedback as a node in the tree.
 
 ## 8. What to measure (node n14)
