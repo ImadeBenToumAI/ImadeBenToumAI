@@ -39,7 +39,7 @@ Post as a reply to his tutorial thread, with the video attached.
 >
 > One evening, $57 of model time, 32 tests. What it taught me about the plugin API is in the thread.
 >
-> github.com/ImadeBenToumAI/ImadeBenToumAI/tree/main/plugins/ambiflex
+> github.com/ImadeBenToumAI/ambiflex
 
 Thread, second post (the field notes, the part his team is most likely to read):
 
@@ -76,7 +76,7 @@ PR title: `Add Ambiflex: ambitious reasoning tree plugin (auto mode, tree search
 
 Line to add:
 
-> - [Ambiflex](https://github.com/ImadeBenToumAI/ImadeBenToumAI/tree/main/plugins/ambiflex) - Felix Rieseberg's Altitude / Depth / Range method as a live, steerable reasoning tree; runs a reviewed plan on its own, explores competing tracks with parallel subagents scored by a judge, reports ETA and cost.
+> - [Ambiflex](https://github.com/ImadeBenToumAI/ambiflex) - Felix Rieseberg's Altitude / Depth / Range method as a live, steerable reasoning tree; runs a reviewed plan on its own, explores competing tracks with parallel subagents scored by a judge, reports ETA and cost.
 
 Targets: `awesome-claude-code`, `awesome-claude-code-plugins` and any list with a "plugins" section. One PR each, same line.
 
@@ -88,7 +88,23 @@ One post, not two.
 >
 > The part I would like feedback on: the auto mode hands Claude the next node after each turn without asking. It stops on interruption, on a turn budget, on a dollar budget, and when it needs a decision that is yours (publishing, spending, going public). Is that the right set of stops?
 >
-> Install: `/plugin install ambiflex --marketplace ImadeBenToumAI/ImadeBenToumAI`. 60-second video and the tree-search numbers in the README.
+> Install: `/plugin install ambiflex --marketplace ImadeBenToumAI/ambiflex`. 60-second video and the tree-search numbers in the README.
+
+## 5b. RoboNuggets (node n12)
+
+RoboNuggets is Jay E's paid AI-automation community on Skool (about 1,300 members), with a free YouTube channel and a blog on robonuggets.us. Skool has no posting API, so nothing publishes there automatically: one post in the community feed by hand, and one message to Jay E to pitch a feature. Both below. Post after Show HN, the same afternoon as Discord and Reddit.
+
+**Community post (Skool feed, category "Wins" or "Show your work"):**
+
+> I turned Felix Rieseberg's "How to be more ambitious" tutorial into a Claude Code plugin. The plan is a tree you can steer from your phone; a node is not "done" until it names the test or metric that proved it; three agents explore three tracks in parallel, scored by one benchmark, and the winner merges. It ran its own launch plan in one evening for $57.
+>
+> 104-second film and one-line install: github.com/ImadeBenToumAI/ambiflex
+>
+> Question for the automation people here: the auto mode hands Claude the next node after each turn without asking, and stops on a budget, a turn limit or a decision that is mine. What stops would you add?
+
+**Message to Jay E (DM on Skool or hello@ address on the site), for a feature or a video:**
+
+> Hi Jay, I built Ambiflex, an open-source Claude Code plugin that runs Felix Rieseberg's ambition method as a live tree, with an auto mode that executes a reviewed plan and a tree search that scores parallel agents with one benchmark. The numbers are in the repo (334 ms to 44 ms on the demo, verified independently; a "2-day" node done in 10 minutes). If you would like to cover it, I can record a walkthrough for the community or do a live session. Film and repo: github.com/ImadeBenToumAI/ambiflex
 
 ## 6. French post, LinkedIn or a francophone community (node n12)
 
@@ -96,18 +112,18 @@ One post, not two.
 >
 > Un nœud n'est « terminé » que s'il nomme la preuve (test, métrique) ; sinon il reste « à valider ». Trois agents explorent trois pistes en parallèle, jugés par le même benchmark : le gagnant fusionné à 7,4×. Et un chiffre qui m'a surpris : Claude termine en dix minutes ce que j'avais estimé à deux jours. Facteur 0,01.
 >
-> Code, démo et notes sur l'API des plugins : github.com/ImadeBenToumAI/ImadeBenToumAI/tree/main/plugins/ambiflex
+> Code, démo et notes sur l'API des plugins : github.com/ImadeBenToumAI/ambiflex
 
 ## 7. Launch-day order (node n15)
 
 Same morning, in this order, nothing earlier:
 
-1. Create `github.com/ImadeBenToumAI/ambiflex` (public, empty) and tell Claude: the prepared repository is pushed, marketplace switched, README links updated.
+1. ~~Create `github.com/ImadeBenToumAI/ambiflex`~~ Done 19 Oct: repository pushed, install verified from it, links switched.
 2. Publish article 1 on your site.
 3. Reply to Felix with the video (section 2).
 4. Show HN (section 3), first comment within a minute.
 5. Awesome-list PRs (section 4).
-6. Discord / Reddit (section 5), French post (section 6) in the afternoon.
+6. Discord / Reddit (section 5), RoboNuggets (section 5b), French post (section 6) in the afternoon.
 7. Answer every comment within 24 h; record each piece of feedback as a node in the tree.
 
 ## 8. What to measure (node n14)

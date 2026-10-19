@@ -209,12 +209,14 @@
       "parents": [
         "n12"
       ],
-      "summary": "Weekly node update after launch: stars, installs, issues by others, external PRs, Anthropic mentions. Targets at 90 days: 500 / — / 20 / 10 / 1 (docs/launch-kit.md §8). Starts on launch day.",
+      "summary": "Weekly snapshot automated from 19 Oct: a scheduled task every Monday 08:50 Paris reads stars, forks, issues and PRs by others for ImadeBenToumAI/ambiflex (clones and views once a GITHUB_TRAFFIC_TOKEN secret exists), appends a row to docs/adoption.md, updates this node and the mobile page. Baseline 19 Oct: 0 / 0 / 0 / 0. Targets at 90 days: 500 stars, 20 issues by others, 10 external PRs, 1 Anthropic mention.",
       "estimate": "1w",
       "id": "n14",
-      "status": "proposed",
+      "status": "exploring",
       "createdAt": "2026-10-18T21:20:19.877Z",
-      "updatedAt": "2026-10-18T22:41:23.528Z"
+      "updatedAt": "2026-10-19T00:26:28.979Z",
+      "judge": "docs/adoption.md rows against the 90-day targets; at day 45 (3 Dec 2026) each metric at half or the content angle changes",
+      "startedAt": "2026-10-19T00:26:28.979Z"
     },
     {
       "title": "Launch day",
@@ -224,12 +226,13 @@
         "n11",
         "n12"
       ],
-      "summary": "Same-morning order in docs/launch-kit.md §7: dedicated repo, article 1, reply to Felix with the video, Show HN, awesome lists, communities. Waits on the user: video recorded, articles signed, repo created.",
+      "summary": "Launch day, 19 Oct. Step 1 done: github.com/ImadeBenToumAI/ambiflex created by the user, prepared copy pushed (v0.3.1, film, articles, demo, own marketplace), install verified from it in a fresh HOME, links switched in the profile README, plugin README and launch kit. Remaining steps are the user's: article 1 on their site, reply to Felix with the film, Show HN, awesome lists, communities.",
       "estimate": "1d",
       "id": "n15",
-      "status": "proposed",
+      "status": "exploring",
       "createdAt": "2026-10-18T21:20:22.882Z",
-      "updatedAt": "2026-10-18T22:41:23.543Z"
+      "updatedAt": "2026-10-19T00:25:59.665Z",
+      "startedAt": "2026-10-19T00:16:52.002Z"
     },
     {
       "title": "Demo: CSV parse",
@@ -344,11 +347,11 @@
     "startedAt": "2026-10-18T21:55:08.518Z"
   },
   "cost": {
-    "spentUsd": 84.29,
-    "sessionUsd": 84.29,
-    "ratePerHour": 31.63,
+    "spentUsd": 90.22,
+    "sessionUsd": 90.22,
+    "ratePerHour": 30.87,
     "assumedRate": false,
-    "estimateUsd": 273.32,
+    "estimateUsd": 266.75,
     "model": "claude-fable-5-1",
     "rateLimits": [
       {
