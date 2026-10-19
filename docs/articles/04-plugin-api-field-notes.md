@@ -1,6 +1,6 @@
 # What I learned building a plugin on Claude Code's new function-hooks API
 
-*Draft 1, written with the data of one evening. Imade Ben Toum. To be signed and published by me; Claude drafted it from the session log.*
+*Draft 2, every point has a commit behind it in github.com/ImadeBenToumAI/ImadeBenToumAI. Imade Ben Toum. Drafted by Claude from the session's own data (tree, log, commits); every number is traceable to the repository. Links to github.com/ImadeBenToumAI/ambiflex go live on launch day (the code is in the profile repository until then). To be edited and signed by me.*
 
 Claude Code's plugin API (the "function hooks" surface, early access as of October 2026) lets a TypeScript module sit between the user, the model and the engine: it can rewrite a prompt, draw a pane, register tools the model calls, start subagents, and submit prompts of its own. I used it to build Ambiflex, a reasoning tree that runs Felix Rieseberg's *be-ambitious* method and executes a reviewed plan on its own. Here is what the API did well, what surprised me, and what I would tell the team. Every point below has a commit behind it.
 
@@ -32,18 +32,25 @@ Saving the module reloads it when the turn ends, *or sooner when a tool the plug
 
 A tool hook holds the turn, so `$.prompt.submit` inside it is refused ("it would wait on the turn this hook is holding"). `$.agent.spawn` from the same place works and runs in the background; the agent's report comes back as a `turn.complete` with an `agentId`. That asymmetry is logical once you see it, and the refusal message says exactly why. One wish: the test kit cannot start agents, so it strips `agentId` from a test bottom's answer; a documented way to stub a spawned agent's `turn.complete` would let the tree-search path be tested without matching on a `NODE:` line in the report.
 
-## 8. What the API made possible in one evening
+## 8. `ui.Svg` is a picture, and a wide tree is a small picture
+
+The pane draws the tree as an SVG. Two things I learned when a second project put 22 children under one node: the SVG scales to the slot, so a one-row tree of 22 columns becomes unreadable, and the component has no click events, so the user's instinct to tap a node does nothing. The first is mine to fix, and I did (rows wrap at six columns, finished leaves fold into a chip). The second is an ask: a way to name clickable regions in an `Svg`, even just `<a>` elements that fire an `onPress` with their `href`. Until then the panel says where to click: the list under the picture.
+
+![The panel after the fix, on a 25-node tree: rows wrap, finished leaves fold](../../assets/launch/02-tree.png)
+
+## 9. What the API made possible in one evening
 
 - A plan with 19 nodes executed in auto mode: after each turn the plugin hands the model the next open node whose parents are settled.
-- Three subagents exploring three ways to speed up a parser in parallel, each in its own git worktree, scored by the same benchmark, pruned to the winner, merged: 334 ms to 44 ms, verified by a benchmark the agents did not run.
+- Three subagents exploring three ways to speed up a parser in parallel, each in its own git worktree, scored by the same benchmark, pruned to the winner, merged: 334 ms to 44 ms, verified by a benchmark the agents did not run. The whole evening, agents included, cost $57.
 - Cost read from the session's own ledger (`$.session.usage().cost.usd`), alerts on a budget and on the 5-hour window, a calibration factor from real timings: the model finishes a "2-day" node in about ten minutes, which is a number worth having in front of you when you estimate.
 
-## 9. What I would ask the team for
+## 10. What I would ask the team for
 
 1. A `queued | started` result on `$.prompt.submit`, or a documented per-host behaviour.
 2. A standard bottoms file for the test kit.
 3. A way to stub a spawned agent's completion in tests.
 4. `$.session.root()` in the first paragraph of the `$.fs` docs.
 5. A pane on mobile, even read-only.
+6. Clickable regions in `ui.Svg`.
 
 Everything else I expected to be hard was not. The API is early access and it already carries a real product.

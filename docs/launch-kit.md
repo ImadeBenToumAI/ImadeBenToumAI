@@ -37,7 +37,7 @@ Post as a reply to his tutorial thread, with the video attached.
 >
 > Altitude / Depth / Range as a live tree. "Done" needs a proof or it stays "needs review". Three agents explore three tracks in parallel, scored by one benchmark; the winner merged at 7.4×.
 >
-> One evening, $48 of API time, 31 tests. What it taught me about the plugin API is in the thread.
+> One evening, $57 of model time, 32 tests. What it taught me about the plugin API is in the thread.
 >
 > github.com/ImadeBenToumAI/ImadeBenToumAI/tree/main/plugins/ambiflex
 

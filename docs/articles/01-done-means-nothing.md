@@ -1,8 +1,8 @@
 # "Done" means nothing when an agent says it
 
-*Draft 1. Imade Ben Toum. Drafted by Claude from the session log; to be edited and signed by me.*
+*Draft 2, verified against the tree on 19 October 2026. Imade Ben Toum. Drafted by Claude from the session's own data (tree, log, commits); every number is traceable to the repository. Links to github.com/ImadeBenToumAI/ambiflex go live on launch day (the code is in the profile repository until then). To be edited and signed by me.*
 
-Last week I asked Claude Code to fix a bug and it said "done" in forty seconds. It had changed the right file. It had not run the test. The test failed. Nothing about the word "done" had changed between the moment it was true and the moment it was not.
+> **[Your own example here, two or three sentences.]** The shape is always the same: the agent says "done", the file is changed, the test was not run, the test fails. Nothing about the word "done" changed between the moment it was true and the moment it was not.
 
 Felix Rieseberg's tutorial on being more ambitious with models has one line I keep coming back to: *don't let the model grade its own work*. He means it as advice about prompting. I took it as a rule to put in software, and this is what happened.
 
@@ -10,13 +10,15 @@ Felix Rieseberg's tutorial on being more ambitious with models has one line I ke
 
 In Ambiflex, the plugin I built to run his method inside Claude Code, every piece of work is a node in a tree. A node has a status. The statuses are the usual ones, with one change: **`done` cannot be set without a `verification`**, a field that names the test, command or metric that proved the result. If Claude calls `tree_upsert` with `status: done` and no verification, the plugin does not refuse; it saves the node as `needs review` and tells Claude why. The user is the only one who can move a node to `validated`.
 
-That is the whole mechanism. Eleven lines of TypeScript and one test.
+That is the whole mechanism. Two lines of TypeScript and one test.
+
+![The panel with node n7 open: the verification line names the end-to-end run and the independent benchmark that proved it](../../assets/launch/04-proof.png)
 
 ## What changed in practice
 
 Three things, in the order I noticed them.
 
-**Claude started running the judge before claiming the result.** Not because it was told to in a prompt, but because the only way to get a node marked done was to have something to put in the verification field. On the twelve nodes the plugin has run so far, every `done` carries a command or a test count. Two nodes stayed at `needs review` for a while because nothing could prove them yet; that was the right outcome, and it was visible.
+**Claude started running the judge before claiming the result.** Not because it was told to in a prompt, but because the only way to get a node marked done was to have something to put in the verification field. On the fourteen nodes marked done so far, every one carries a command, a test count or a measurement. Two nodes stayed at `needs review` for a while because nothing could prove them yet; that was the right outcome, and it was visible.
 
 **Agents stopped being trusted by default.** When a subagent finishes, the plugin moves its node to `needs review`, never to `done`. An agent finishing proves nothing. On the tree-search run (three agents, three ways to speed up a parser) each agent reported a score, and I ran the benchmark myself on their branches before merging the winner: 3.15 / 6.66 / 7.3 reported, 2.95 / 4.41 / 7.24 measured. Same ranking, different numbers. The gap is container noise, but the point is that I had a number of my own.
 
@@ -30,4 +32,4 @@ Once nodes carried real start and end times, the plugin could compute a calibrat
 
 You do not need a plugin for this. You need one field and one habit: when the model says a thing is done, ask it what proved that, and write the answer down next to the thing. If there is no answer, the thing is not done. It is waiting for review, and now you know.
 
-The plugin is at github.com/ImadeBenToumAI/ambiflex. The verification rule is in `hooks/tree.ts`, function `upsert`, with the test that checks it.
+The plugin is at github.com/ImadeBenToumAI/ambiflex. The verification rule is in `hooks/tree.ts`, function `upsert`, with the test that checks it. The evening that produced these nodes cost $57 of model time, three parallel agents included.
