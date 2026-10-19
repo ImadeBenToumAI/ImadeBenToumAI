@@ -39,7 +39,7 @@ Post as a reply to his tutorial thread, with the video attached.
 >
 > One evening, $57 of model time, 32 tests. What it taught me about the plugin API is in the thread.
 >
-> github.com/ImadeBenToumAI/ImadeBenToumAI/tree/main/plugins/ambiflex
+> github.com/ImadeBenToumAI/ambiflex
 
 Thread, second post (the field notes, the part his team is most likely to read):
 
@@ -76,7 +76,7 @@ PR title: `Add Ambiflex: ambitious reasoning tree plugin (auto mode, tree search
 
 Line to add:
 
-> - [Ambiflex](https://github.com/ImadeBenToumAI/ImadeBenToumAI/tree/main/plugins/ambiflex) - Felix Rieseberg's Altitude / Depth / Range method as a live, steerable reasoning tree; runs a reviewed plan on its own, explores competing tracks with parallel subagents scored by a judge, reports ETA and cost.
+> - [Ambiflex](https://github.com/ImadeBenToumAI/ambiflex) - Felix Rieseberg's Altitude / Depth / Range method as a live, steerable reasoning tree; runs a reviewed plan on its own, explores competing tracks with parallel subagents scored by a judge, reports ETA and cost.
 
 Targets: `awesome-claude-code`, `awesome-claude-code-plugins` and any list with a "plugins" section. One PR each, same line.
 
@@ -88,7 +88,7 @@ One post, not two.
 >
 > The part I would like feedback on: the auto mode hands Claude the next node after each turn without asking. It stops on interruption, on a turn budget, on a dollar budget, and when it needs a decision that is yours (publishing, spending, going public). Is that the right set of stops?
 >
-> Install: `/plugin install ambiflex --marketplace ImadeBenToumAI/ImadeBenToumAI`. 60-second video and the tree-search numbers in the README.
+> Install: `/plugin install ambiflex --marketplace ImadeBenToumAI/ambiflex`. 60-second video and the tree-search numbers in the README.
 
 ## 6. French post, LinkedIn or a francophone community (node n12)
 
@@ -96,13 +96,13 @@ One post, not two.
 >
 > Un nœud n'est « terminé » que s'il nomme la preuve (test, métrique) ; sinon il reste « à valider ». Trois agents explorent trois pistes en parallèle, jugés par le même benchmark : le gagnant fusionné à 7,4×. Et un chiffre qui m'a surpris : Claude termine en dix minutes ce que j'avais estimé à deux jours. Facteur 0,01.
 >
-> Code, démo et notes sur l'API des plugins : github.com/ImadeBenToumAI/ImadeBenToumAI/tree/main/plugins/ambiflex
+> Code, démo et notes sur l'API des plugins : github.com/ImadeBenToumAI/ambiflex
 
 ## 7. Launch-day order (node n15)
 
 Same morning, in this order, nothing earlier:
 
-1. Create `github.com/ImadeBenToumAI/ambiflex` (public, empty) and tell Claude: the prepared repository is pushed, marketplace switched, README links updated.
+1. ~~Create `github.com/ImadeBenToumAI/ambiflex`~~ Done 19 Oct: repository pushed, install verified from it, links switched.
 2. Publish article 1 on your site.
 3. Reply to Felix with the video (section 2).
 4. Show HN (section 3), first comment within a minute.
