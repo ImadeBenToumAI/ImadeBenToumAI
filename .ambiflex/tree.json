@@ -344,8 +344,8 @@
     "startedAt": "2026-10-18T21:55:08.518Z"
   },
   "cost": {
-    "spentUsd": 80.91,
-    "sessionUsd": 80.91,
+    "spentUsd": 82.04,
+    "sessionUsd": 82.04,
     "ratePerHour": 30,
     "assumedRate": true,
     "estimateUsd": 259.2,
