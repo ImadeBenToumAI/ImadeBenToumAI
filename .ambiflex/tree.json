@@ -12,6 +12,7 @@
       "verification": "migrated from snapshot (unverified)",
       "createdAt": "2026-10-18T21:13:54.189Z",
       "updatedAt": "2026-10-18T23:10:36.728Z",
+      "startedAt": "2026-10-18T21:13:54.189Z",
       "finishedAt": "2026-10-18T21:13:54.189Z"
     },
     {
@@ -78,6 +79,7 @@
       "updatedAt": "2026-10-18T22:04:40.939Z",
       "detail": "## Calibrated estimates (Phase 3)\n\n- Three-point estimates `1h/2h/4h` (optimistic / likely / pessimistic): expected value (o + 4p + pess) / 6, spread (pess − o) / 6. Single values still work.\n- Calibration = median of actual / estimated over finished nodes, counting only real measurements: ≥ 2 min of work on an estimate ≥ 30 min, ratio within [0.05, 20]. The ×0.03 artefact from hand-set timestamps is now excluded.\n- Expected end: the calibrated critical path turned into a calendar date (8h days, Monday to Friday; around the clock in auto mode), with ± from the three-point spread. Shown in the panel, in `tree_get` and when auto mode starts.\n- The method tells Claude to multiply new estimates by the reported calibration factor.\n\nJudge: `claude plugin test` 28/28.",
       "verification": "claude plugin test: 28 pass (PERT value and spread of \"1h/2h/4h\", calibration rejects hand-set timestamps and keeps a 3h-on-2h measurement at ×1.5, arrival skips nights and weekends unless continuous)",
+      "startedAt": "2026-10-18T22:01:10.561Z",
       "finishedAt": "2026-10-18T22:04:40.939Z"
     },
     {
@@ -94,6 +96,7 @@
       "updatedAt": "2026-10-18T22:06:34.744Z",
       "detail": "## Nodes ↔ branches ↔ PR (Phase 4)\n\n- An agent spawned with `#<id>` gets that node its own branch `ambiflex/<id>-<slug>` in a worktree under `.ambiflex/worktrees/<id>` (git-ignored); the agent is told to work and commit there, never on the main checkout.\n- The panel shows, per node with a branch, its commits beyond `main` and its PR when `gh` can report one; the Git tab refreshes them after every git command.\n- \"Validate\" on a node with a branch asks Claude to propose the merge of that branch (or its PR) and never to merge without explicit confirmation.\n\nJudge: `claude plugin test` 29/29 and a real-repo run of the worktree commands.",
       "verification": "claude plugin test: 29 pass (an agent spawned for #n1 gets `git worktree add .ambiflex/worktrees/n1 -b ambiflex/n1-perf-track`, its prompt names the worktree, the node records the branch and the panel shows it); the same git commands verified on a real temporary repository (worktree, commit, `git log main..branch` lists it)",
+      "startedAt": "2026-10-18T22:01:10.577Z",
       "finishedAt": "2026-10-18T22:06:34.744Z"
     },
     {
@@ -157,6 +160,7 @@
       "status": "done",
       "createdAt": "2026-10-18T21:20:08.591Z",
       "updatedAt": "2026-10-18T23:38:07.270Z",
+      "startedAt": "2026-10-18T22:02:18.114Z",
       "verification": "Recorded with tools/launch-video/record-desktop.js; nine stills reviewed by eye (captions clear of the docked sheet); ffprobe duration 76.4 s. Voice not yet laid over.",
       "finishedAt": "2026-10-18T23:20:29.931Z"
     },
@@ -180,12 +184,13 @@
       "parents": [
         "n9"
       ],
-      "summary": "All texts drafted in docs/launch-kit.md: reply to Felix (with thread), Show HN title and first comment, awesome-list line, Discord/Reddit post, French post, launch-day order. Posting is the user's.",
+      "summary": "All texts drafted in docs/launch-kit.md: reply to Felix (with thread), Show HN title and first comment, awesome-list line, Discord/Reddit post, RoboNuggets community post and outreach message to Jay E (Skool has no posting API: by hand), French post, launch-day order. Posting is the user's.",
       "estimate": "2w",
       "id": "n12",
       "status": "review",
       "createdAt": "2026-10-18T21:20:13.737Z",
-      "updatedAt": "2026-10-18T22:41:06.079Z"
+      "updatedAt": "2026-10-19T00:51:41.503Z",
+      "startedAt": "2026-10-18T21:20:13.737Z"
     },
     {
       "title": "Retention loop",
@@ -201,6 +206,7 @@
       "createdAt": "2026-10-18T21:20:17.249Z",
       "updatedAt": "2026-10-18T22:41:08.596Z",
       "verification": "Phases 2 and 3 shipped in v0.3 (event log, calibration from real timings, expected end date): the plugin gets more useful with every project, which is what this node asked for; measured by the calibration line in tree_get",
+      "startedAt": "2026-10-18T21:20:17.249Z",
       "finishedAt": "2026-10-18T22:41:08.596Z"
     },
     {
@@ -209,14 +215,15 @@
       "parents": [
         "n12"
       ],
-      "summary": "Weekly snapshot automated from 19 Oct: a scheduled task every Monday 08:50 Paris reads stars, forks, issues and PRs by others for ImadeBenToumAI/ambiflex (clones and views once a GITHUB_TRAFFIC_TOKEN secret exists), appends a row to docs/adoption.md, updates this node and the mobile page. Baseline 19 Oct: 0 / 0 / 0 / 0. Targets at 90 days: 500 stars, 20 issues by others, 10 external PRs, 1 Anthropic mention.",
+      "summary": "Primary metric switched on 20 Oct (user's decision) to unique cloners, since an install is a clone and most installers never open GitHub. Launch day: 39 unique cloners, 7 visitors, 1 star, all traffic from LinkedIn. Targets at 90 days (18 Jan 2027): 1,000 unique cloners cumulative; 500 stars secondary; 20 issues, 10 PRs, 1 Anthropic mention. Live on the Ambiflex adoption dashboard; weekly row in docs/adoption.md.",
       "estimate": "1w",
       "id": "n14",
       "status": "exploring",
       "createdAt": "2026-10-18T21:20:19.877Z",
-      "updatedAt": "2026-10-19T00:26:28.979Z",
-      "judge": "docs/adoption.md rows against the 90-day targets; at day 45 (3 Dec 2026) each metric at half or the content angle changes",
-      "startedAt": "2026-10-19T00:26:28.979Z"
+      "updatedAt": "2026-10-20T10:48:56.589Z",
+      "judge": "Cumulative unique cloners since 19 Oct from docs/traffic.json, against 1,000 by 18 Jan 2027; half-way check 3 Dec",
+      "startedAt": "2026-10-19T00:26:28.979Z",
+      "verification": "Workflow run 39182519758 succeeded and committed docs/traffic.json (14 days, totals 0); scheduled task trig_01PELX56VShCoc93swSkMoLY enabled, next run Monday."
     },
     {
       "title": "Launch day",
@@ -250,6 +257,7 @@
       "updatedAt": "2026-10-18T22:12:53.443Z",
       "verification": "Independent run of demo/bench.js on the main checkout after merging the winner: 334 ms → 44 ms, SCORE 7.38 (agents reported 3.15 / 6.66 / 7.3; my own runs 2.95 / 4.41 / 7.24, same ranking); correctness gate passes",
       "branch": "ambiflex/n19-track-shaped-rows",
+      "startedAt": "2026-10-18T22:12:49.747Z",
       "finishedAt": "2026-10-18T22:12:53.443Z"
     },
     {
@@ -337,7 +345,39 @@
       "verification": "claude plugin validate passes; claude plugin test 32/32 incl. a new test on a 24-child row (width < 1200, folded chip, selected node unfolds); rendered preview of a 25-node tree of the same shape reviewed by eye.",
       "createdAt": "2026-10-19T00:07:56.932Z",
       "updatedAt": "2026-10-19T00:07:56.932Z",
+      "startedAt": "2026-10-19T00:07:56.932Z",
       "finishedAt": "2026-10-19T00:07:56.932Z"
+    },
+    {
+      "id": "n22",
+      "title": "LinkedIn newsletter",
+      "lens": "range",
+      "status": "exploring",
+      "parents": [
+        "n12",
+        "n11"
+      ],
+      "summary": "The user's distribution channel of choice: their LinkedIn newsletter, one edition a week from 19 Oct (article 1 today). Kit in docs/linkedin-kit.md: calendar, edition 1 title/subtitle/cover/closing block, companion posts EN/FR, tagging rule, brief for the session that reads the user's LinkedIn to write the anecdote in their voice, edits for the newsletter editor. Articles live in the Claude doc \"Ambiflex launch articles\".",
+      "estimate": "1d/2d/4d",
+      "judge": "Edition 1 published 19 Oct; subscribers and reactions per edition recorded in docs/adoption.md",
+      "createdAt": "2026-10-19T01:00:57.498Z",
+      "updatedAt": "2026-10-19T01:00:57.498Z",
+      "startedAt": "2026-10-19T01:00:57.498Z"
+    },
+    {
+      "title": "awesome-ai-plugins",
+      "lens": "step",
+      "status": "exploring",
+      "parents": [
+        "n12"
+      ],
+      "summary": "Catalog PR #899 on hashgraph-online/awesome-ai-plugins (one line, opened by Codex from the user's account). First source scan 57/100 (min 80); all six findings fixed in ambiflex@d1ba856 (no new Function in the demo, pinned action, dependabot, SECURITY.md, 58 MB film out of the tree). Waiting on the re-scan.",
+      "estimate": "1h/2h/1d",
+      "judge": "HOL source scan score ≥ 80 and the PR's checks green",
+      "id": "n23",
+      "createdAt": "2026-10-20T12:44:22.433Z",
+      "updatedAt": "2026-10-20T12:44:22.433Z",
+      "startedAt": "2026-10-20T12:44:22.433Z"
     }
   ],
   "auto": {
