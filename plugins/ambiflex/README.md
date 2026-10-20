@@ -13,7 +13,9 @@ Ambiflex turns Felix Rieseberg's **be-ambitious** method (Altitude, Depth, Range
 - **Tree search.** `tree_explore <node>` (or *Explore tracks* on a node) spawns one subagent per competing track, in parallel, each in its own branch, scored by the judge the track declares (a test, a benchmark, a metric); the scores land on the nodes as the agents report, *Prune weak* keeps the best and *Merge best* folds it in. The budget (agents × minutes) is shown before launch.
 - **Git branches tab.** Branches, commits and merges, refreshed after every git command.
 - **History without conflicts.** Every change is one line appended to `.ambiflex/log.jsonl` (merged by Git with `merge=union`, so two sessions never conflict); the tree is replayed from it, and `.ambiflex/tree.json` is kept as a readable snapshot.
-- **Mobile.** The mobile app places no panel, so `/ambiflex` draws the tree inline in the transcript. For a persistent, touch-first view, Claude can publish an "Ambiflex" claude.ai page that mirrors the tree live and sends your taps back as comments.
+- **Interactive page.** `/ambiflex page` (or *Interactive page* in the panel) asks Claude to publish a private claude.ai page for the project: the tree drawn full width with clickable nodes, the action sheet (Validate, Deeper, Wider…), List and Git tabs, live as Claude updates the tree. Your taps reach Claude as comments. It needs a Claude account that can publish pages; the page stays private until you share it.
+- **Live activity.** While Claude or a subagent works on a node, the page shows it on that node: a pulsing halo, Claude Code's ✻ spinner, and what it is doing right now (*Pondering…*, `Bash: npm test`). Each subagent appears as a fork under its node, with its branch. The plugin pushes this to the page itself (doc `live/current`, at most every 2 s); allow the `ArtifactData` tool once so the pushes run without a prompt. The panel shows the same activity on the node's second line.
+- **Mobile.** The mobile app places no panel, so `/ambiflex` draws the tree inline in the transcript; the interactive page is the touch-first view.
 
 Claude fills the tree through the tools `tree_set_goal`, `tree_upsert`, `tree_merge`, `tree_get`, `tree_auto`.
 
@@ -22,6 +24,7 @@ Claude fills the tree through the tools `tree_set_goal`, `tree_upsert`, `tree_me
 | Command | Effect |
 |---|---|
 | `/ambiflex` | Open the panel (or draw the tree inline on mobile) |
+| `/ambiflex page` | Publish (or republish) the interactive page for this project |
 | `/ambiflex auto [turns]` | Run the plan without approval; optional turn budget (default 40) |
 | `/ambiflex stop` | Stop auto mode |
 | `/ambiflex status` | Text report: progress, ETA, calibration, nodes |
@@ -47,6 +50,20 @@ claude plugin install ambiflex --marketplace ImadeBenToumAI/ambiflex
 ```
 
 In the desktop app: **+** next to the prompt box → **Plugins** → **Add marketplace** `ImadeBenToumAI/ambiflex` → **Add plugin** `ambiflex`.
+
+## Stay up to date
+
+Claude Code does not update plugins from this marketplace on its own until you turn it on. Once, in a Claude Code session: `/plugin` → **Marketplaces** → `ambiflex` → **Enable auto-update**. New versions then arrive after a session starts, and the panel says once per project what changed.
+
+To update by hand instead:
+
+```
+claude plugin marketplace update ambiflex && claude plugin update ambiflex@ambiflex
+```
+
+Then restart the session, and run `/ambiflex page` to republish the interactive page with the new version.
+
+To hear about new versions, watch the repository: **Watch** → **Custom** → **Releases** on [GitHub](https://github.com/ImadeBenToumAI/ambiflex). What changed in each version is in [CHANGELOG.md](https://github.com/ImadeBenToumAI/ambiflex/blob/main/CHANGELOG.md).
 
 In this repository, `.claude/settings.json` enables the plugin for every session (cloud or local) opened on the repository.
 

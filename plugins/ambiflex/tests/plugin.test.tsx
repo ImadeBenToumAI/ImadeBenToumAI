@@ -1,4 +1,5 @@
 import { expect, mock, test } from 'claude-code/testing'
+import { VERSION, WHATS_NEW } from '../hooks/register'
 
 const flush = () => new Promise(r => (globalThis as any).setTimeout(r, 0))
 // The world beneath the plugin: nothing answers these in the kit, so each test lays its own bottom.
@@ -212,3 +213,65 @@ test('tree search: one agent per track, scores land from their reports, prune ke
   expect(text).toContain('n3 [Step · abandoned] Rewrite')
   expect(text).toContain('n4 [Step · proposed] Streaming')
 })
+
+test('/ambiflex page writes the page and asks Claude to publish it, then to republish once it exists', async ($, on) => {
+  mock.clock(on)
+  const files = new Map<string, string>()
+  bottoms(on, [], files)
+  await $.tool.call({ tool: 'mcp__ambiflex__tree_set_goal', goal: 'Page' } as never)
+  const first = await $.command.run({ command: 'ambiflex', args: 'page' } as never)
+  await flush()
+  const page = [...files].find(([k]) => k.endsWith('.ambiflex/page.html'))?.[1]
+  expect(String((first as { text?: unknown }).text)).toContain('publish')
+  expect(String((first as { context?: string[] }).context?.[0])).toContain('Publish the interactive Ambiflex page')
+  expect(page).toContain('<title>Ambiflex</title>')
+  files.set(String([...files.keys()].find(k => k.endsWith('page.html'))).replace('page.html', 'artifact.json'), '{"url":"https://claude.ai/artifact/x"}')
+  const again = await $.command.run({ command: 'ambiflex', args: 'page' } as never)
+  expect(String((again as { context?: string[] }).context?.[0])).toContain('Republish')
+})
+
+test('live activity: an explorer shows what it does on its node, the main loop its tool, and both clear at the end', async ($, on) => {
+  mock.clock(on)
+  const disk = new Map<string, string>()
+  bottoms(on, [], disk)
+  on('agent.spawn', async () => ({ model: 'm', agentId: 'agent-7' }) as never)
+  on('tool.call', { tool: 'Bash' }, async () => ({ result: 'ok' }) as never)
+  await $.tool.call({ tool: 'mcp__ambiflex__tree_upsert', title: 'Speed up', lens: 'depth' } as never)
+  await $.tool.call({ tool: 'mcp__ambiflex__tree_upsert', title: 'Cache', lens: 'step', parents: ['n1'], judge: 'bench' } as never)
+  await $.tool.call({ tool: 'mcp__ambiflex__tree_upsert', title: 'Docs', lens: 'step', status: 'exploring' } as never)
+  await $.tool.call({ tool: 'mcp__ambiflex__tree_explore', parent: 'n1', maxAgents: 1 } as never)
+  const liveDoc = () => JSON.parse([...disk].find(([k]) => k.endsWith('.ambiflex/live.json'))?.[1] ?? '{"agents":[]}') as { agents: { id: string; node: string; phase: string; label: string; branch?: string }[] }
+  expect(liveDoc().agents).toContainEqual(expect.objectContaining({ id: 'agent-7', node: 'n2', phase: 'starting', branch: 'ambiflex/n2-cache' }))
+
+  await $.tool.call({ tool: 'Bash', command: 'node bench.js', agentId: 'agent-7' } as never)
+  await $.tool.call({ tool: 'Bash', command: 'git status' } as never)
+  const ui = await $.ui.mount({ plugin: 'ambiflex', surface: 'desktop', component: 'Pane', props: {}, requestId: 'ambiflex', viewport: { columns: 100, rows: 40 } } as never)
+  expect(await ui.find({ text: /Agents running: 1/ })).toBeTruthy()
+
+  await $.turn.complete({ answer: 'NODE: n2\nSCORE: 1', durationMs: 1, isAborted: false, turnId: 'a', reason: 'answer', agentId: 'agent-7' } as never)
+  await turn($, 'answer')
+  expect(liveDoc().agents).toEqual([])
+})
+
+test('after an update the plugin says once what changed; a first install says nothing', async ($, on) => {
+  mock.clock(on)
+  const toasts: string[] = []
+  const disk = new Map<string, string>()
+  bottoms(on, toasts, disk)
+  on('session.usage', async () => ({ value: { cost: { usd: 0 } } }))
+  on('tool.register', async () => ({ value: undefined }))
+  on('command.register', async () => ({ value: undefined }))
+  on('session.start', async (_$: any, e: any) => ({ cwd: e.cwd }) as never)
+  const boot = () => $.session.start({ source: 'startup', cwd: '/p' } as never)
+  await boot()
+  expect(toasts.some(t => t.startsWith('Ambiflex '))).toBe(false)
+
+  const seen = [...disk.keys()].find(k => k.endsWith('.ambiflex/.seen-version'))!
+  expect(disk.get(seen)?.trim()).toBe(VERSION)
+  disk.set(seen, '0.4.0\n')
+  await boot()
+  expect(toasts).toContain(`Ambiflex ${VERSION}: ${WHATS_NEW}`)
+  await boot()
+  expect(toasts.filter(t => t.startsWith('Ambiflex ')).length).toBe(1)
+})
+
