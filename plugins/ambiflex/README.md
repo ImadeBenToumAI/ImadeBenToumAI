@@ -51,6 +51,20 @@ claude plugin install ambiflex --marketplace ImadeBenToumAI/ambiflex
 
 In the desktop app: **+** next to the prompt box → **Plugins** → **Add marketplace** `ImadeBenToumAI/ambiflex` → **Add plugin** `ambiflex`.
 
+## Stay up to date
+
+Claude Code does not update plugins from this marketplace on its own until you turn it on. Once, in a Claude Code session: `/plugin` → **Marketplaces** → `ambiflex` → **Enable auto-update**. New versions then arrive after a session starts, and the panel says once per project what changed.
+
+To update by hand instead:
+
+```
+claude plugin marketplace update ambiflex && claude plugin update ambiflex@ambiflex
+```
+
+Then restart the session, and run `/ambiflex page` to republish the interactive page with the new version.
+
+To hear about new versions, watch the repository: **Watch** → **Custom** → **Releases** on [GitHub](https://github.com/ImadeBenToumAI/ambiflex). What changed in each version is in [CHANGELOG.md](https://github.com/ImadeBenToumAI/ambiflex/blob/main/CHANGELOG.md).
+
 In this repository, `.claude/settings.json` enables the plugin for every session (cloud or local) opened on the repository.
 
 > Status: Claude Code's "function hooks" plugin API is in early access and may change between releases.

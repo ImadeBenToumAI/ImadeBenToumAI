@@ -20,6 +20,10 @@ const ATTRS = () => `${root}.ambiflex/.gitattributes`
 const ARTIFACT_FILE = '.ambiflex/artifact.json'
 const PAGE_FILE = '.ambiflex/page.html'
 const LIVE = () => `${root}.ambiflex/live.json`
+const SEEN = () => `${root}.ambiflex/.seen-version`
+// Keep in step with .claude-plugin/plugin.json: shown once per project after an update.
+export const VERSION = '0.5.0'
+export const WHATS_NEW = 'live activity on the page: a spinner and what each loop is doing on its node, one fork per subagent. Run /ambiflex page to republish the page.'
 
 const tree = atom({ plugin: 'ambiflex', key: 'tree' } as const, emptyTree())
 const selected = atom({ plugin: 'ambiflex', key: 'selected' } as const, '')
@@ -174,7 +178,7 @@ async function branchFor($: $, id: string): Promise<{ branch: string; path: stri
   const args = exists && exists.exitCode === 0 ? ['git', 'worktree', 'add', path, branch] : ['git', 'worktree', 'add', path, '-b', branch]
   const made = await $.process.run(args).catch(() => undefined)
   if (!made || made.exitCode !== 0) return undefined
-  await $.fs.write(`${root}.ambiflex/.gitignore`, 'worktrees/\n').catch(() => undefined)
+  await $.fs.write(`${root}.ambiflex/.gitignore`, 'worktrees/\nlive.json\n.seen-version\n').catch(() => undefined)
   if (!node.branch) await commit($, { kind: 'upsert', input: { id, branch } })
   return { branch, path }
 }
@@ -268,6 +272,16 @@ async function noteActivity($: $, agentId: string | undefined, patch: Pick<LiveA
   }
   const node = mainNode(await read($, tree))
   await setLive($, 'main', node ? { ...patch, node, who: 'Claude' } : null)
+}
+
+/** After an update, says once per project what changed. A first install (no tree yet) says nothing. */
+async function whatsNew($: $) {
+  const seen = ((await $.fs.read(SEEN()).catch(() => '')) as string).trim()
+  if (seen === VERSION) return
+  const t = await read($, tree)
+  await $.fs.write(SEEN(), `${VERSION}\n`)
+  if (!seen && t.nodes.length === 0) return
+  $.ui.toast(`Ambiflex ${VERSION}: ${WHATS_NEW}`)
 }
 
 async function trackAgentEnd($: $, key: string, id: string | undefined) {
@@ -648,6 +662,7 @@ export const register: Register = (on, opts) => {
     sessionUsdAtStart = (await $.session.usage().catch(() => undefined))?.cost?.usd ?? 0
     await load($)
     await refreshGit($)
+    await whatsNew($).catch(() => undefined)
     for (const [name, description, schema] of [
       ['tree_get', 'Reads the reasoning tree (goal, nodes, statuses, progress, ETA, auto mode).', { type: 'object' }],
       ['tree_set_goal', 'Sets the root goal (the goal behind the goal).', {

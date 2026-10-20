@@ -1,4 +1,5 @@
 import { expect, mock, test } from 'claude-code/testing'
+import { VERSION, WHATS_NEW } from '../hooks/register'
 
 const flush = () => new Promise(r => (globalThis as any).setTimeout(r, 0))
 // The world beneath the plugin: nothing answers these in the kit, so each test lays its own bottom.
@@ -251,3 +252,26 @@ test('live activity: an explorer shows what it does on its node, the main loop i
   await turn($, 'answer')
   expect(liveDoc().agents).toEqual([])
 })
+
+test('after an update the plugin says once what changed; a first install says nothing', async ($, on) => {
+  mock.clock(on)
+  const toasts: string[] = []
+  const disk = new Map<string, string>()
+  bottoms(on, toasts, disk)
+  on('session.usage', async () => ({ value: { cost: { usd: 0 } } }))
+  on('tool.register', async () => ({ value: undefined }))
+  on('command.register', async () => ({ value: undefined }))
+  on('session.start', async (_$: any, e: any) => ({ cwd: e.cwd }) as never)
+  const boot = () => $.session.start({ source: 'startup', cwd: '/p' } as never)
+  await boot()
+  expect(toasts.some(t => t.startsWith('Ambiflex '))).toBe(false)
+
+  const seen = [...disk.keys()].find(k => k.endsWith('.ambiflex/.seen-version'))!
+  expect(disk.get(seen)?.trim()).toBe(VERSION)
+  disk.set(seen, '0.4.0\n')
+  await boot()
+  expect(toasts).toContain(`Ambiflex ${VERSION}: ${WHATS_NEW}`)
+  await boot()
+  expect(toasts.filter(t => t.startsWith('Ambiflex ')).length).toBe(1)
+})
+
