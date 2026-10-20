@@ -1,1 +1,5 @@
 worktrees/
+live.json
+git.json
+.seen-version
+page.html
