@@ -228,3 +228,26 @@ test('/ambiflex page writes the page and asks Claude to publish it, then to repu
   const again = await $.command.run({ command: 'ambiflex', args: 'page' } as never)
   expect(String((again as { context?: string[] }).context?.[0])).toContain('Republish')
 })
+
+test('live activity: an explorer shows what it does on its node, the main loop its tool, and both clear at the end', async ($, on) => {
+  mock.clock(on)
+  const disk = new Map<string, string>()
+  bottoms(on, [], disk)
+  on('agent.spawn', async () => ({ model: 'm', agentId: 'agent-7' }) as never)
+  on('tool.call', { tool: 'Bash' }, async () => ({ result: 'ok' }) as never)
+  await $.tool.call({ tool: 'mcp__ambiflex__tree_upsert', title: 'Speed up', lens: 'depth' } as never)
+  await $.tool.call({ tool: 'mcp__ambiflex__tree_upsert', title: 'Cache', lens: 'step', parents: ['n1'], judge: 'bench' } as never)
+  await $.tool.call({ tool: 'mcp__ambiflex__tree_upsert', title: 'Docs', lens: 'step', status: 'exploring' } as never)
+  await $.tool.call({ tool: 'mcp__ambiflex__tree_explore', parent: 'n1', maxAgents: 1 } as never)
+  const liveDoc = () => JSON.parse([...disk].find(([k]) => k.endsWith('.ambiflex/live.json'))?.[1] ?? '{"agents":[]}') as { agents: { id: string; node: string; phase: string; label: string; branch?: string }[] }
+  expect(liveDoc().agents).toContainEqual(expect.objectContaining({ id: 'agent-7', node: 'n2', phase: 'starting', branch: 'ambiflex/n2-cache' }))
+
+  await $.tool.call({ tool: 'Bash', command: 'node bench.js', agentId: 'agent-7' } as never)
+  await $.tool.call({ tool: 'Bash', command: 'git status' } as never)
+  const ui = await $.ui.mount({ plugin: 'ambiflex', surface: 'desktop', component: 'Pane', props: {}, requestId: 'ambiflex', viewport: { columns: 100, rows: 40 } } as never)
+  expect(await ui.find({ text: /Agents running: 1/ })).toBeTruthy()
+
+  await $.turn.complete({ answer: 'NODE: n2\nSCORE: 1', durationMs: 1, isAborted: false, turnId: 'a', reason: 'answer', agentId: 'agent-7' } as never)
+  await turn($, 'answer')
+  expect(liveDoc().agents).toEqual([])
+})

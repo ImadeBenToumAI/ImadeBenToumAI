@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register, ResolveInput } from 'claude-code'
 
-import type { BranchInfo, Cost, Status, Tab, Tree } from '../types'
+import type { BranchInfo, Cost, LiveActivity, Status, Tab, Tree } from '../types'
 import { LOG_FILE, eventsFromSnapshot, parseLog, replay, serialize } from './log'
 import { PAGE_HTML } from './page'
 import type { Event } from './log'
@@ -19,6 +19,7 @@ const LOG = () => `${root}${LOG_FILE}`
 const ATTRS = () => `${root}.ambiflex/.gitattributes`
 const ARTIFACT_FILE = '.ambiflex/artifact.json'
 const PAGE_FILE = '.ambiflex/page.html'
+const LIVE = () => `${root}.ambiflex/live.json`
 
 const tree = atom({ plugin: 'ambiflex', key: 'tree' } as const, emptyTree())
 const selected = atom({ plugin: 'ambiflex', key: 'selected' } as const, '')
@@ -29,6 +30,7 @@ const view = atom({ plugin: 'ambiflex', key: 'view' } as const, '' as '' | 'all'
 const git = atom({ plugin: 'ambiflex', key: 'git' } as const, '')
 const agents = atom({ plugin: 'ambiflex', key: 'agents' } as const, [] as string[])
 const branches = atom({ plugin: 'ambiflex', key: 'branches' } as const, {} as Record<string, BranchInfo>)
+const live = atom({ plugin: 'ambiflex', key: 'live' } as const, {} as Record<string, LiveActivity>)
 
 // The system prompt carries only the method. The tree's content is read through tree_get, as data.
 const METHOD = `# Ambiflex: ambitious reasoning tree
@@ -185,9 +187,94 @@ async function openPane($: $) {
   return $.ui.open({ id: PANE, title: 'Ambiflex' })
 }
 
+// Live activity: what each loop is doing, written to .ambiflex/live.json and pushed to the page's
+// "live/current" doc at most every LIVE_EVERY ms (always on a start or an end). A refused push turns it off.
+const LIVE_EVERY = 2000
+let livePushedAt = 0
+let liveVersion: number | undefined
+let liveOff = false
+let pushing = false
+
+/** "Bash: npm test", "Edit: src/a.ts": the tool and its most telling argument. */
+export function toolLabel(e: { tool: string } & Record<string, unknown>): string {
+  const arg = [e.command, e.file_path, e.pattern, e.description, e.url, e.query, e.path].find(v => typeof v === 'string' && v) as string | undefined
+  const name = e.tool.replace(/^mcp__[^_]+__/, '')
+  const text = `${name}${arg ? `: ${arg.split('\n')[0]}` : ''}`
+  return text.length > 60 ? `${text.slice(0, 59)}…` : text
+}
+
+async function artifactUrl($: $): Promise<string | undefined> {
+  const raw = await $.fs.read(`${root}${ARTIFACT_FILE}`).catch(() => '') as string
+  try { return (JSON.parse(raw) as { url?: string }).url || undefined } catch { return undefined }
+}
+
+/** Sets (or with null clears) one loop's activity, then pushes it. */
+async function setLive($: $, key: string, patch: Partial<LiveActivity> | null) {
+  const at = await nowIso($)
+  const map = await read($, live)
+  const before = map[key]
+  if (patch !== null && !before && !patch.node) return
+  const after = patch === null ? undefined : { ...before, ...patch, at } as LiveActivity
+  const changed = !before !== !after || (!!before && !!after && (before.phase !== after.phase || before.label !== after.label || before.node !== after.node))
+  if (!changed && !after) return
+  await update($, live, m => {
+    const next = { ...m }
+    if (after) next[key] = after
+    else delete next[key]
+    return next
+  })
+  if (changed) await pushLive($, patch === null || patch.phase === 'starting')
+}
+
+const versionIn = (r: unknown) => { const m = JSON.stringify(r ?? '').match(/version\D{0,6}(\d+)/i); return m ? Number(m[1]) : undefined }
+
+async function pushLive($: $, force = false) {
+  const now = await $.clock.now()
+  if (pushing || (!force && now - livePushedAt < LIVE_EVERY)) return
+  livePushedAt = now
+  pushing = true
+  try {
+    const map = await read($, live)
+    const doc = { at: new Date(now).toISOString(), agents: Object.entries(map).map(([id, a]) => ({ id, ...a })) }
+    await $.fs.write(LIVE(), `${JSON.stringify(doc, null, 2)}\n`).catch(() => undefined)
+    const url = liveOff ? undefined : await artifactUrl($)
+    if (!url) return
+    const set = () => $.tool.call({ tool: 'ArtifactData', action: 'set', url, collection: 'live', doc_id: 'current', data: doc, ...(liveVersion ? { if_version: liveVersion } : {}) } as never)
+    let r = await set().catch(() => undefined)
+    if (!r || /conflict|changed since|refused|current version|not found|error/i.test(JSON.stringify(r))) {
+      // An unknown or stale version: read the doc's current one once, then try again.
+      const got = await $.tool.call({ tool: 'ArtifactData', action: 'get', url, collection: 'live', doc_id: 'current' } as never).catch(() => undefined)
+      liveVersion = versionIn(got)
+      r = await set().catch(() => undefined)
+      if (!r || /conflict|changed since|refused|current version|error/i.test(JSON.stringify(r))) { liveOff = true; return }
+    }
+    liveVersion = versionIn(r) ?? liveVersion
+  } finally {
+    pushing = false
+  }
+}
+
+/** The node the main loop works on: the latest exploring node no subagent holds. */
+function mainNode(t: Tree): string | undefined {
+  return [...t.nodes].filter(n => n.status === 'exploring' && !n.agent && n.lens !== 'goal')
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0]?.id
+}
+
+/** Records what a loop does: a subagent only once it is attached to a node, the main loop on its current node. */
+async function noteActivity($: $, agentId: string | undefined, patch: Pick<LiveActivity, 'phase' | 'label'>) {
+  if (agentId) {
+    if ((await read($, live))[agentId]) await setLive($, agentId, patch)
+    return
+  }
+  const node = mainNode(await read($, tree))
+  await setLive($, 'main', node ? { ...patch, node, who: 'Claude' } : null)
+}
+
 async function trackAgentEnd($: $, key: string, id: string | undefined) {
   await update($, agents, list => list.filter(one => one !== key))
   if (!id) return
+  const gone = Object.entries(await read($, live)).filter(([k, a]) => k !== 'main' && a.node === id).map(([k]) => k)
+  for (const k of gone) await setLive($, k, null)
   const after = await read($, tree)
   const node = after.nodes.find(n => n.id === id)
   if (!node) return
@@ -366,7 +453,8 @@ async function drawTree($: $, e: ResolveInput) {
 
   const viewMode = await read($, view)
   const compact = viewMode === 'compact' ? true : viewMode === 'all' ? false : compactByDefault(t)
-  const svg = renderSvg(t, sel, { compact })
+  const doing = Object.fromEntries(Object.values(await read($, live)).map(a => [a.node, a.label || (a.phase === 'starting' ? 'starting' : 'thinking…')]))
+  const svg = renderSvg(t, sel, { compact, live: doing })
   // The picture (Claude Code draws an Svg as an image: nothing in it can be pressed) shows the edges;
   // the grid under it is the same tree, level by level, as buttons that select a node.
   const layout = layoutRows(t, sel, { compact })
@@ -657,6 +745,7 @@ export const register: Register = (on, opts) => {
   // Hand the next node over once a turn ends in auto mode.
   on('turn.complete', async ($, e, next) => {
     const ran = await next(e)
+    await setLive($, e.agentId ?? 'main', null).catch(() => undefined)
     if (e.agentId) {
       // A spawned explorer reported: read its score, hand the node to review.
       const t = await read($, tree).catch(() => undefined)
@@ -665,6 +754,7 @@ export const register: Register = (on, opts) => {
       if (node) {
         await commit($, { kind: 'upsert', input: { id: node.id, status: 'review', agent: '', ...(score !== undefined ? { score } : {}), ...(result ? { summary: result } : {}) } }).catch(() => undefined)
         await update($, agents, list => list.filter(one => one !== e.agentId && one !== node.agent)).catch(() => undefined)
+        for (const [k, act] of Object.entries(await read($, live))) if (k !== 'main' && act.node === node.id) await setLive($, k, null).catch(() => undefined)
       }
       return ran
     }
@@ -723,6 +813,7 @@ export const register: Register = (on, opts) => {
       // The engine names the agent; a host that does not is matched by the NODE line of the report.
       const agentId = ('agentId' in spawned && spawned.agentId) || `explorer:${n.id}`
       await commit($, { kind: 'upsert', input: { id: n.id, status: 'exploring', agent: agentId } })
+      await setLive($, agentId, { node: n.id, who: `Explore ${n.id}`, phase: 'starting', label: '', ...(wt ? { branch: wt.branch } : {}) }).catch(() => undefined)
       await update($, agents, list => [...list, agentId])
       launched.push(`${n.id} (${n.title})`)
     }
@@ -768,6 +859,34 @@ export const register: Register = (on, opts) => {
     } finally {
       await trackAgentEnd($, key, id).catch(() => undefined)
     }
+  })
+
+  // Live activity: a started subagent is attached to the node its description cites (#n4).
+  on('agent.spawn', async ($, e, next) => {
+    const started = await next(e)
+    try {
+      const agentId = started && 'agentId' in started ? started.agentId : undefined
+      const t = await read($, tree)
+      const id = agentId && nodeRef(`${e.description ?? ''} ${e.prompt ?? ''}`, t)
+      if (agentId && id) {
+        const branch = t.nodes.find(n => n.id === id)?.branch
+        await setLive($, agentId, { node: id, who: e.description || 'subagent', phase: 'starting', label: '', ...(branch ? { branch } : {}) })
+      }
+    } catch {
+      // Tracking must never block the agent.
+    }
+    return started
+  })
+
+  // Each model request is a loop thinking; each tool call is what it does.
+  on('turn.step', async function* ($, e, next) {
+    await noteActivity($, e.agentId, { phase: 'thinking', label: '' }).catch(() => undefined)
+    return yield* next(e)
+  })
+
+  on('tool.call', async ($, e, next) => {
+    if (!pushing && e.tool !== 'ArtifactData') await noteActivity($, e.agentId, { phase: 'tool', label: toolLabel(e as never) }).catch(() => undefined)
+    return next(e)
   })
 
   // Refresh the Git view after a git command.
