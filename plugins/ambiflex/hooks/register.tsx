@@ -53,7 +53,7 @@ const LIVE = async ($: $) => `${await rootOf($)}.ambiflex/live.json`
 const SEEN = async ($: $) => `${await rootOf($)}.ambiflex/.seen-version`
 // Keep in step with .claude-plugin/plugin.json: shown once per project after an update.
 export const VERSION = '0.11.0'
-export const WHATS_NEW = 'usage monitor: the weekly and 5-hour windows at the top of the page, where the week ends at this pace, the share of this project, the rest of the plan in weekly points, and a Usage tab with every session and the cost per node. Auto mode stops before the week runs out. Set Plan price to compare with your subscription. Run /ambiflex page to republish the page.'
+export const WHATS_NEW = 'usage monitor in one unit, % of your week (the window your subscription is limited by): what is left and when it resets, where the week ends at this pace, the share of this project, what the rest of the plan needs, the 5-hour burst limit, and a Usage tab with every session and the cost per node. API dollars stay in a detail. Auto mode stops before the week runs out. Run /ambiflex page to republish the page.'
 
 const tree = atom({ plugin: 'ambiflex', key: 'tree' } as const, emptyTree())
 const selected = atom({ plugin: 'ambiflex', key: 'selected' } as const, '')
