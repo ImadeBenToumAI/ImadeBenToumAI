@@ -11,3 +11,4 @@ Sources: GitHub API for `ImadeBenToumAI/ambiflex` (stars, forks, issues and PRs 
 | 2026-10-19 | 0 | 0 | 0 | 0 | — | — | 0 | Repository created, nothing posted yet |
 | 2026-10-19 (Mon) | 0 | 0 | 0 | 0 | 0 / 0 | 0 / 0 | 0 | First scheduled snapshot, 6 h after the repository went up; nothing posted yet (edition 1 due today) |
 | 2026-10-20 (Tue) | 1 | 0 | 0 | 0 | 78 / 78 (39 unique) | 21 / 21 (7 unique) | 0 | Launch day counted (19 Oct): all views from LinkedIn; primary metric switched to unique cloners |
+| 2026-10-21 (Wed) | 1 | 0 | 0 | 0 | 195 / 195 (39 + 50 unique by day) | 28 / 28 (7 + 1 unique by day) | 0 | 20 Oct: 117 clones, 50 unique, 1 visitor; includes our own fetches from this cloud session (several syncs and release runs that day), so the organic share is lower. Listed in awesome-ai-plugins and the HOL registry (PR #899 merged 20 Oct) |
