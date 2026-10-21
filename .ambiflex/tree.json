@@ -367,17 +367,34 @@
     {
       "title": "awesome-ai-plugins",
       "lens": "step",
-      "status": "exploring",
+      "status": "done",
       "parents": [
         "n12"
       ],
-      "summary": "Catalog PR #899 on hashgraph-online/awesome-ai-plugins (one line, opened by Codex from the user's account). First source scan 57/100 (min 80); all six findings fixed in ambiflex@d1ba856 (no new Function in the demo, pinned action, dependabot, SECURITY.md, 58 MB film out of the tree). Waiting on the re-scan.",
+      "summary": "PR #899 merged on 20 Oct: Ambiflex is listed in awesome-ai-plugins and in the HOL plugin registry. Claiming the listing (owner-verified badge) is the user's step.",
       "estimate": "1h/2h/1d",
       "judge": "HOL source scan score ≥ 80 and the PR's checks green",
       "id": "n23",
       "createdAt": "2026-10-20T12:44:22.433Z",
-      "updatedAt": "2026-10-20T12:44:22.433Z",
-      "startedAt": "2026-10-20T12:44:22.433Z"
+      "updatedAt": "2026-10-21T10:02:00.187Z",
+      "startedAt": "2026-10-20T12:44:22.433Z",
+      "verification": "hashgraph-online/awesome-ai-plugins PR #899 merged; bot comment confirms the HOL registry listing",
+      "finishedAt": "2026-10-21T10:02:00.187Z"
+    },
+    {
+      "title": "Live page v0.4-0.6",
+      "lens": "step",
+      "status": "done",
+      "parents": [
+        "n13"
+      ],
+      "summary": "Interactive page shipped with the plugin (0.4), live activity and subagent forks (0.5), Linear-style look and Git lane graph (0.6), squash links, Present mode, legend, Working now strip (0.6.1-0.6.5). Releases on GitHub with a changelog; what's-new toast after updates.",
+      "verification": "38/38 plugin tests, claude plugin validate passes, headless renders; releases v0.5.0-v0.6.5 on ImadeBenToumAI/ambiflex",
+      "id": "n24",
+      "createdAt": "2026-10-21T10:02:02.645Z",
+      "updatedAt": "2026-10-21T10:02:02.645Z",
+      "startedAt": "2026-10-21T10:02:02.645Z",
+      "finishedAt": "2026-10-21T10:02:02.645Z"
     }
   ],
   "auto": {
