@@ -5,7 +5,7 @@ import type { BranchInfo, Cost, GitCommit, LiveActivity, Status, Tab, Tree, Tree
 import { LOG_FILE, eventsFromSnapshot, parseLog, replay, serialize } from './log'
 import { PAGE_HTML } from './page'
 import { buildUsage, parseSamples } from './usage'
-import { MODEL_IDS, kindPrompt, parseKind, planRoute, route, routes, statusLine, tierOf } from './routing'
+import { MODEL_IDS, TIERS, kindPrompt, parseKind, planRoute, route, routes, statusLine, tierOf } from './routing'
 import type { Route } from './routing'
 import { SUMMARY_SCRIPT, backfillLines, parseSummaries, transcriptDir } from './backfill'
 import { buildBrain, describe, elementOf } from './brain'
@@ -76,7 +76,7 @@ const LIVE = async ($: $) => `${await rootOf($)}.ambiflex/live.json`
 const SEEN = async ($: $) => `${await rootOf($)}.ambiflex/.seen-version`
 // Keep in step with .claude-plugin/plugin.json: shown once per project after an update.
 export const VERSION = '0.16.1'
-export const WHATS_NEW = 'After /reload-plugins the tools now show the parameters of the new version (run, verifyCmd, blocked…): before, the agent kept the schemas of the version the session started with.'
+export const WHATS_NEW = 'Model routing from the page: Off, Suggest or Auto, with an estimate of what routing saves on the open work. After /reload-plugins the tools show the parameters of the new version.'
 
 const tree = atom({ plugin: 'ambiflex', key: 'tree' } as const, emptyTree())
 const selected = atom({ plugin: 'ambiflex', key: 'selected' } as const, '')
@@ -221,7 +221,7 @@ async function save($: $, next: Tree) {
   if (guard.blocked) throw new Error(guard.warning)
   await update($, tree, () => next)
   // The snapshot names its project, so a page can tell whose tree it shows.
-  const snapshot = { ...next, project: await projectName($), pluginVersion: VERSION, proof: proofScore(next), blockers: blockers(next, new Date().toISOString()).slice(0, 12), ...((await routingMode($)) !== 'off' ? { routing: await routingMode($), routes: routes(next, await routingCap($)) } : {}) }
+  const snapshot = { ...next, project: await projectName($), pluginVersion: VERSION, proof: proofScore(next), blockers: blockers(next, new Date().toISOString()).slice(0, 12), routing: await routingMode($), routes: routes(next, await routingCap($)), topModel: TIERS[Math.max(0, await routingCap($))] ?? 'fable' }
   await $.fs.write((await FILE($)), `${JSON.stringify(snapshot, null, 2)}\n`)
   // The page follows the tree by itself, and only this project's page (its record names the project).
   if (await artifactUrl($, true)) await pushDoc($, 'tree', snapshot as unknown as Record<string, unknown>, true).catch(() => undefined)
@@ -783,6 +783,9 @@ async function registerTools($: $) {
       type: 'object', properties: { id: { type: 'string', description: 'One node; omitted, every node that has a verifyCmd.' } },
     }],
     ['tree_altitude', 'Takes altitude: returns the brief and the steps for a strategy review of the whole plan by the strongest model (what /ambiflex altitude does). Follow the steps it returns.', { type: 'object', properties: {} }],
+    ['tree_routing', 'Sets model routing for the project (what /ambiflex routing does): off (one model), suggest (show each node\'s model and effort), auto (run each node on it). Optionally caps the top model.', {
+      type: 'object', properties: { mode: { type: 'string', enum: ['off', 'suggest', 'auto'] }, top: { type: 'string', enum: ['haiku', 'sonnet', 'opus', 'fable'], description: 'Highest model routing may use.' } }, required: ['mode'],
+    }],
     ['tree_review_submit', 'Records a strategy review (from /ambiflex altitude): the diagnosis and the proposed changes. Nothing is applied: the user accepts or refuses each proposal.', {
       type: 'object',
       properties: {
@@ -1506,6 +1509,7 @@ ${outline(await read($, tree))}` }
   // Proofs that can be replayed: each verifyCmd runs through the Bash tool, so the user's permission
   // rules apply to it like to any other command (a tree from elsewhere cannot run anything silently).
   on('tool.call', { tool: 'mcp__ambiflex__tree_altitude' }, async ($) => ({ result: (await altitudeRequest($)).ask.replace(/^\[tree\] /, '') }))
+  on('tool.call', { tool: 'mcp__ambiflex__tree_routing' }, async ($, e) => { const r = e as unknown as { mode?: string; top?: string }; return { result: await setRouting($, r.mode, r.top) } })
   on('tool.call', { tool: 'mcp__ambiflex__tree_review_submit' }, async ($, e) => {
     const raw = e as unknown as { diagnosis?: string; by?: string; proposals?: { kind?: string; node?: string; fields?: Record<string, unknown>; why?: string; gain?: number }[] }
     const t = await read($, tree)
