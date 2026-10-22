@@ -1,0 +1,8 @@
+{
+  "note": "Ambiflex pages republished by the daily scheduled task with the latest release. Add a page here when a project publishes one.",
+  "pages": [
+    { "project": "ImadeBenToumAI", "url": "https://claude.ai/artifact/5srKegnGLGq8z6BpSzLY5N" },
+    { "project": "new-toum-pay-platform", "url": "https://claude.ai/artifact/4BS79tQEcZQyHqXfzMEcyM" },
+    { "project": "stt-tashelhit", "url": "https://claude.ai/artifact/YLvSAJReKN73eg91xxs8kQ" }
+  ]
+}
