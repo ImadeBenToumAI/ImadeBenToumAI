@@ -1,0 +1,426 @@
+{
+  "version": 1,
+  "goal": "Make Ambiflex the reference Claude Code plugin for steering agents: noticed, used, and improved by others",
+  "nodes": [
+    {
+      "title": "v0.1 shipped",
+      "lens": "goal",
+      "status": "done",
+      "summary": "Panel, SVG graph, actions, tools, Git tab. 9 tests passing.",
+      "id": "n1",
+      "parents": [],
+      "verification": "migrated from snapshot (unverified)",
+      "createdAt": "2026-10-18T21:13:54.189Z",
+      "updatedAt": "2026-10-18T23:10:36.728Z",
+      "startedAt": "2026-10-18T21:13:54.189Z",
+      "finishedAt": "2026-10-18T21:13:54.189Z"
+    },
+    {
+      "title": "Fix v0.1",
+      "lens": "depth",
+      "parents": [
+        "n1"
+      ],
+      "summary": "Fixed in v0.2: prompt injection via tree.json, done without proof, homonymous agents, prompt cache, panel at every session, tests.",
+      "estimate": "1d",
+      "id": "n2",
+      "status": "done",
+      "verification": "claude plugin validate + 17 tests green (v0.2)",
+      "startedAt": "2026-10-18T21:30:00.000Z",
+      "finishedAt": "2026-10-18T21:44:32.001088Z",
+      "createdAt": "2026-10-18T21:13:55.539Z",
+      "updatedAt": "2026-10-18T23:10:37.397Z"
+    },
+    {
+      "title": "Verifiable nodes",
+      "lens": "depth",
+      "parents": [
+        "n2"
+      ],
+      "summary": "Done in v0.2: \"done\" requires a verification, otherwise the node stays at \"needs review\".",
+      "estimate": "1d",
+      "id": "n3",
+      "status": "done",
+      "verification": "claude plugin validate + 17 tests green (v0.2)",
+      "startedAt": "2026-10-18T21:30:00.000Z",
+      "finishedAt": "2026-10-18T21:44:32.001088Z",
+      "createdAt": "2026-10-18T21:13:56.986Z",
+      "updatedAt": "2026-10-18T23:10:37.948Z"
+    },
+    {
+      "title": "Event log",
+      "lens": "altitude",
+      "parents": [
+        "n2"
+      ],
+      "summary": "Replace the whole-file tree.json with an append-only .ambiflex/log.jsonl that Git merges without conflicts (merge=union); the tree is replayed from it; tree.json stays as a derived snapshot.",
+      "estimate": "2d",
+      "id": "n4",
+      "status": "done",
+      "branch": "claude/ambiflex-auto-run",
+      "startedAt": "2026-10-18T21:56:59.354Z",
+      "createdAt": "2026-10-18T21:13:58.485Z",
+      "updatedAt": "2026-10-18T21:59:40.417Z",
+      "detail": "## Event log (Phase 2)\n\n- `.ambiflex/log.jsonl`: one JSON line per change (`goal`, `upsert`, `merge`, `auto`), append-only, with the session id and a timestamp. `.ambiflex/.gitattributes` sets `merge=union` so two sessions' logs merge without conflicts.\n- `replay(events)` rebuilds the tree in time order. When two sessions created the same id offline, the later one is renamed (`n7-b`) and that session's later references follow.\n- `tree.json` stays as a derived snapshot (readable, synced to the mobile page). Cost is only in the snapshot.\n- Migration: a session that finds a `tree.json` but no log converts it once (`eventsFromSnapshot`).\n\nJudge: `claude plugin test` 25/25, migration script round trip `true`.",
+      "verification": "claude plugin test: 25 pass (replay equals state, union of two divergent logs recovers both subtrees with renamed collisions, snapshot migration round-trips); real tree.json migrated to log.jsonl with an exact round trip",
+      "finishedAt": "2026-10-18T21:59:40.417Z"
+    },
+    {
+      "title": "Calibrated estimates",
+      "lens": "altitude",
+      "parents": [
+        "n4"
+      ],
+      "summary": "Three-point estimates (o/p/pess), critical path (done), arrival date in the header, calibration factor applied to new estimates (measured; the ×0.03 artefact from hand-set timestamps must be excluded).",
+      "estimate": "2d",
+      "id": "n5",
+      "status": "done",
+      "createdAt": "2026-10-18T21:13:59.938Z",
+      "updatedAt": "2026-10-18T22:04:40.939Z",
+      "detail": "## Calibrated estimates (Phase 3)\n\n- Three-point estimates `1h/2h/4h` (optimistic / likely / pessimistic): expected value (o + 4p + pess) / 6, spread (pess − o) / 6. Single values still work.\n- Calibration = median of actual / estimated over finished nodes, counting only real measurements: ≥ 2 min of work on an estimate ≥ 30 min, ratio within [0.05, 20]. The ×0.03 artefact from hand-set timestamps is now excluded.\n- Expected end: the calibrated critical path turned into a calendar date (8h days, Monday to Friday; around the clock in auto mode), with ± from the three-point spread. Shown in the panel, in `tree_get` and when auto mode starts.\n- The method tells Claude to multiply new estimates by the reported calibration factor.\n\nJudge: `claude plugin test` 28/28.",
+      "verification": "claude plugin test: 28 pass (PERT value and spread of \"1h/2h/4h\", calibration rejects hand-set timestamps and keeps a 3h-on-2h measurement at ×1.5, arrival skips nights and weekends unless continuous)",
+      "startedAt": "2026-10-18T22:01:10.561Z",
+      "finishedAt": "2026-10-18T22:04:40.939Z"
+    },
+    {
+      "title": "Nodes ↔ branches ↔ PR",
+      "lens": "range",
+      "parents": [
+        "n4"
+      ],
+      "summary": "One track = one branch or worktree; a node shows its commits and PR; \"Validate\" on a node with a PR proposes the merge (never merges alone).",
+      "estimate": "2d",
+      "id": "n6",
+      "status": "done",
+      "createdAt": "2026-10-18T21:14:01.387Z",
+      "updatedAt": "2026-10-18T22:06:34.744Z",
+      "detail": "## Nodes ↔ branches ↔ PR (Phase 4)\n\n- An agent spawned with `#<id>` gets that node its own branch `ambiflex/<id>-<slug>` in a worktree under `.ambiflex/worktrees/<id>` (git-ignored); the agent is told to work and commit there, never on the main checkout.\n- The panel shows, per node with a branch, its commits beyond `main` and its PR when `gh` can report one; the Git tab refreshes them after every git command.\n- \"Validate\" on a node with a branch asks Claude to propose the merge of that branch (or its PR) and never to merge without explicit confirmation.\n\nJudge: `claude plugin test` 29/29 and a real-repo run of the worktree commands.",
+      "verification": "claude plugin test: 29 pass (an agent spawned for #n1 gets `git worktree add .ambiflex/worktrees/n1 -b ambiflex/n1-perf-track`, its prompt names the worktree, the node records the branch and the panel shows it); the same git commands verified on a real temporary repository (worktree, commit, `git log main..branch` lists it)",
+      "startedAt": "2026-10-18T22:01:10.577Z",
+      "finishedAt": "2026-10-18T22:06:34.744Z"
+    },
+    {
+      "title": "Tree search",
+      "lens": "range",
+      "parents": [
+        "n3"
+      ],
+      "summary": "tree_explore spawns one agent per track in its own branch; scores land from their reports; tree_prune keeps the best. Proven on demo/parse.js: three explorers, winner merged at 7.4×.",
+      "estimate": "3d",
+      "id": "n7",
+      "status": "done",
+      "createdAt": "2026-10-18T21:14:02.883Z",
+      "updatedAt": "2026-10-18T23:15:37.784Z",
+      "startedAt": "2026-10-18T22:10:54.432Z",
+      "detail": "## Tree search (Phase 5)\n\n- `tree_explore <parent>`: one subagent per proposed child track, in parallel, each in its own worktree branch, with the budget (agents × minutes) echoed before launch. Each agent is told to end with `NODE:` / `RESULT:` / `SCORE:` measured by the track's declared judge.\n- Scores land on the nodes as the agents finish (matched by agent id, or by the NODE line on hosts that do not name agents); the nodes move to *needs review*.\n- `tree_prune <parent>`: keeps the best-scored track, abandons the others with the reason. The panel ranks the tracks and offers *Prune weak* and *Merge best*.\n- Real run: demo/parse.js, baseline 334 ms. Shaped rows (7×) beat single pass (4-7×) and no-spread (3×). Merged: 44 ms on main.\n\nJudge: the independent benchmark on the merged code, and 31 tests.",
+      "verification": "End-to-end run on a real problem: tree_explore spawned 3 agents in their own worktree branches, each reported NODE/RESULT/SCORE through its judge, scores landed on the nodes automatically, tree_prune kept the best, the winner merged into the main branch benches at 7.38× (independent measurement); plus 31 unit tests",
+      "finishedAt": "2026-10-18T22:13:00.239Z"
+    },
+    {
+      "title": "Publish and submit",
+      "lens": "step",
+      "parents": [
+        "n5",
+        "n6",
+        "n7"
+      ],
+      "summary": "Published from the profile repository (marketplace \"imade\"); v0.3.1 merged to main (PR #7) and re-verified by a fresh-HOME install. The prepared standalone repository copy is synced to v0.3.1 with the film; the dedicated repository is created on launch day.",
+      "estimate": "1d",
+      "id": "n8",
+      "status": "done",
+      "createdAt": "2026-10-18T21:14:04.181Z",
+      "updatedAt": "2026-10-19T00:11:13.838Z",
+      "startedAt": "2026-10-18T22:26:18.659Z",
+      "verification": "Fresh-HOME install after merging PR #7: claude plugin list shows ambiflex@imade 0.3.1 enabled (2026-10-19).",
+      "finishedAt": "2026-10-18T22:31:59.807Z"
+    },
+    {
+      "title": "Adoption strategy",
+      "lens": "goal",
+      "status": "review",
+      "parents": [
+        "n1"
+      ],
+      "summary": "Umbrella for n10-n15. Everything Claude could do alone is done; the open children wait on the user (video, articles, posting, launch-day repo). End-to-end report in docs/auto-run-report.md.",
+      "id": "n9",
+      "createdAt": "2026-10-18T21:20:05.843Z",
+      "updatedAt": "2026-10-18T23:01:40.241Z",
+      "startedAt": "2026-10-18T21:20:05.843Z"
+    },
+    {
+      "title": "Proof before promo",
+      "lens": "altitude",
+      "parents": [
+        "n9",
+        "n5"
+      ],
+      "summary": "Launch film redone: desktop, dark mode, 1920×1080, 75 s, nine shots following docs/launch-video-script.md. Masters in assets/launch (clean + subtitled), SRT, stills. Voice: user generates narration.mp3 from the script, then node tools/launch-video/mux.js.",
+      "estimate": "2w",
+      "id": "n10",
+      "status": "done",
+      "createdAt": "2026-10-18T21:20:08.591Z",
+      "updatedAt": "2026-10-18T23:38:07.270Z",
+      "startedAt": "2026-10-18T22:02:18.114Z",
+      "verification": "Recorded with tools/launch-video/record-desktop.js; nine stills reviewed by eye (captions clear of the docked sheet); ffprobe duration 76.4 s. Voice not yet laid over.",
+      "finishedAt": "2026-10-18T23:20:29.931Z"
+    },
+    {
+      "title": "Content over plugin",
+      "lens": "depth",
+      "parents": [
+        "n9"
+      ],
+      "summary": "Second drafts of the four articles (docs/articles/01-04), fact-checked against the tree, the log and the auto-run report: commit-timestamp timings, one cost figure ($57), panel stills embedded, links to the dedicated repository, the wide-tree panel lesson added to the field notes. Article 1 opens on a placeholder for the author's own anecdote. Waiting on the user's edits and signature.",
+      "estimate": "4w",
+      "id": "n11",
+      "status": "review",
+      "createdAt": "2026-10-18T21:20:11.140Z",
+      "updatedAt": "2026-10-19T00:14:36.782Z",
+      "startedAt": "2026-10-18T22:26:18.644Z"
+    },
+    {
+      "title": "Distribution",
+      "lens": "range",
+      "parents": [
+        "n9"
+      ],
+      "summary": "All texts drafted in docs/launch-kit.md: reply to Felix (with thread), Show HN title and first comment, awesome-list line, Discord/Reddit post, RoboNuggets community post and outreach message to Jay E (Skool has no posting API: by hand), French post, launch-day order. Posting is the user's.",
+      "estimate": "2w",
+      "id": "n12",
+      "status": "review",
+      "createdAt": "2026-10-18T21:20:13.737Z",
+      "updatedAt": "2026-10-19T00:51:41.503Z",
+      "startedAt": "2026-10-18T21:20:13.737Z"
+    },
+    {
+      "title": "Retention loop",
+      "lens": "depth",
+      "parents": [
+        "n10",
+        "n4"
+      ],
+      "summary": "Buzz brings installs; usage comes from history and calibration. Both shipped in v0.3.",
+      "estimate": "3w",
+      "id": "n13",
+      "status": "done",
+      "createdAt": "2026-10-18T21:20:17.249Z",
+      "updatedAt": "2026-10-18T22:41:08.596Z",
+      "verification": "Phases 2 and 3 shipped in v0.3 (event log, calibration from real timings, expected end date): the plugin gets more useful with every project, which is what this node asked for; measured by the calibration line in tree_get",
+      "startedAt": "2026-10-18T21:20:17.249Z",
+      "finishedAt": "2026-10-18T22:41:08.596Z"
+    },
+    {
+      "title": "Measure adoption",
+      "lens": "depth",
+      "parents": [
+        "n12"
+      ],
+      "summary": "Primary metric switched on 20 Oct (user's decision) to unique cloners, since an install is a clone and most installers never open GitHub. Launch day: 39 unique cloners, 7 visitors, 1 star, all traffic from LinkedIn. Targets at 90 days (18 Jan 2027): 1,000 unique cloners cumulative; 500 stars secondary; 20 issues, 10 PRs, 1 Anthropic mention. Live on the Ambiflex adoption dashboard; weekly row in docs/adoption.md.",
+      "estimate": "1w",
+      "id": "n14",
+      "status": "exploring",
+      "createdAt": "2026-10-18T21:20:19.877Z",
+      "updatedAt": "2026-10-20T10:48:56.589Z",
+      "judge": "Cumulative unique cloners since 19 Oct from docs/traffic.json, against 1,000 by 18 Jan 2027; half-way check 3 Dec",
+      "startedAt": "2026-10-19T00:26:28.979Z",
+      "verification": "Workflow run 39182519758 succeeded and committed docs/traffic.json (14 days, totals 0); scheduled task trig_01PELX56VShCoc93swSkMoLY enabled, next run Monday."
+    },
+    {
+      "title": "Launch day",
+      "lens": "step",
+      "parents": [
+        "n10",
+        "n11",
+        "n12"
+      ],
+      "summary": "Launch day, 19 Oct. Step 1 done: github.com/ImadeBenToumAI/ambiflex created by the user, prepared copy pushed (v0.3.1, film, articles, demo, own marketplace), install verified from it in a fresh HOME, links switched in the profile README, plugin README and launch kit. Remaining steps are the user's: article 1 on their site, reply to Felix with the film, Show HN, awesome lists, communities.",
+      "estimate": "1d",
+      "id": "n15",
+      "status": "exploring",
+      "createdAt": "2026-10-18T21:20:22.882Z",
+      "updatedAt": "2026-10-19T00:25:59.665Z",
+      "startedAt": "2026-10-19T00:16:52.002Z"
+    },
+    {
+      "title": "Demo: CSV parse",
+      "lens": "step",
+      "parents": [
+        "n7",
+        "n19"
+      ],
+      "summary": "Three explorers in parallel on demo/parse.js: no object spread (3×), single pass (4-7×), shaped rows (7×). Pruned to the shaped-rows track and merged it: 334 ms → 44 ms on the main checkout.",
+      "estimate": "1h/2h/4h",
+      "judge": "BASELINE_MS=334 node demo/bench.js <impl> → SCORE = speedup; wrong output scores 0",
+      "id": "n16",
+      "status": "done",
+      "createdAt": "2026-10-18T22:10:54.450Z",
+      "updatedAt": "2026-10-18T22:12:53.443Z",
+      "verification": "Independent run of demo/bench.js on the main checkout after merging the winner: 334 ms → 44 ms, SCORE 7.38 (agents reported 3.15 / 6.66 / 7.3; my own runs 2.95 / 4.41 / 7.24, same ranking); correctness gate passes",
+      "branch": "ambiflex/n19-track-shaped-rows",
+      "startedAt": "2026-10-18T22:12:49.747Z",
+      "finishedAt": "2026-10-18T22:12:53.443Z"
+    },
+    {
+      "title": "Track: no object spread",
+      "lens": "step",
+      "parents": [
+        "n16"
+      ],
+      "summary": "Replacing per-cell object spread with direct assignment (plus hoisted header trimming) cuts parse time from ~334 ms to ~105 ms while keeping split-based parsing. Pruned: scored 3.15 against 7.3 for n19.",
+      "estimate": "20min/30min/1h",
+      "judge": "BASELINE_MS=334 node demo/bench.js demo/parse.js (run from the worktree)",
+      "id": "n17",
+      "status": "abandoned",
+      "createdAt": "2026-10-18T22:10:58.177Z",
+      "updatedAt": "2026-10-18T22:12:43.776Z",
+      "branch": "ambiflex/n17-track-no-object-spread",
+      "agent": "",
+      "startedAt": "2026-10-18T22:11:14.689Z",
+      "score": 3.15
+    },
+    {
+      "title": "Track: single pass",
+      "lens": "step",
+      "parents": [
+        "n16"
+      ],
+      "summary": "Single-pass indexOf parser passes the correctness gate and runs ~5-6x faster than the 334 ms baseline (best 50.1 ms). Pruned: scored 6.66 against 7.3 for n19.",
+      "estimate": "30min/1h/2h",
+      "judge": "BASELINE_MS=334 node demo/bench.js demo/parse.js (run from the worktree)",
+      "id": "n18",
+      "status": "abandoned",
+      "createdAt": "2026-10-18T22:11:00.356Z",
+      "updatedAt": "2026-10-18T22:12:43.768Z",
+      "branch": "ambiflex/n18-track-single-pass",
+      "agent": "",
+      "startedAt": "2026-10-18T22:11:14.857Z",
+      "score": 6.66
+    },
+    {
+      "title": "Track: shaped rows",
+      "lens": "step",
+      "parents": [
+        "n16"
+      ],
+      "summary": "Header-built row factory with a single hidden class plus lazy trim cuts the parse from ~334ms to ~42ms, about 7–8x faster than baseline.",
+      "estimate": "30min/1h/2h",
+      "judge": "BASELINE_MS=334 node demo/bench.js demo/parse.js (run from the worktree)",
+      "id": "n19",
+      "status": "merged",
+      "createdAt": "2026-10-18T22:11:02.537Z",
+      "updatedAt": "2026-10-18T22:12:49.747Z",
+      "branch": "ambiflex/n19-track-shaped-rows",
+      "agent": "",
+      "startedAt": "2026-10-18T22:11:14.999Z",
+      "score": 7.3,
+      "finishedAt": "2026-10-18T22:12:49.747Z"
+    },
+    {
+      "id": "n20",
+      "title": "HyperFrames film",
+      "lens": "step",
+      "status": "done",
+      "parents": [
+        "n10"
+      ],
+      "summary": "Rebuild the launch film as a HyperFrames composition: animated 3D logo intro, full-frame shots with camera moves, typed terminals, Kokoro English narration timed per cue, title card. Rendered at 1920×1080 30 fps.",
+      "estimate": "2h/3h/5h",
+      "judge": "hyperframes check passes; every frame fills 1920×1080 (no empty half); voice and cues align within 0.3 s; user watches it.",
+      "createdAt": "2026-10-18T23:47:45.801Z",
+      "updatedAt": "2026-10-19T00:08:10.158Z",
+      "startedAt": "2026-10-18T23:47:45.801Z",
+      "verification": "hyperframes lint: 0 errors; 13 snapshot frames reviewed by eye (every scene fills 1920×1080, cursor lands on Validate); render exit 0; ffprobe: h264 1920×1080 + aac, 104.0 s; volumedetect mean -24.5 dB, max -1.3 dB. User has not yet watched it.",
+      "finishedAt": "2026-10-19T00:02:09.075Z"
+    },
+    {
+      "id": "n21",
+      "title": "Panel on wide trees",
+      "lens": "step",
+      "status": "done",
+      "parents": [
+        "n13"
+      ],
+      "summary": "Feedback from a second project (25 nodes, 22 under one parent): the pane's graph shrank to one unreadable row and the picture is not clickable. Fixed in v0.3.1: rows wrap at six columns, finished leaves fold into a chip per parent on trees over 16 nodes (toggle), hint that selection is from the list.",
+      "estimate": "1h/2h/4h",
+      "verification": "claude plugin validate passes; claude plugin test 32/32 incl. a new test on a 24-child row (width < 1200, folded chip, selected node unfolds); rendered preview of a 25-node tree of the same shape reviewed by eye.",
+      "createdAt": "2026-10-19T00:07:56.932Z",
+      "updatedAt": "2026-10-19T00:07:56.932Z",
+      "startedAt": "2026-10-19T00:07:56.932Z",
+      "finishedAt": "2026-10-19T00:07:56.932Z"
+    },
+    {
+      "id": "n22",
+      "title": "LinkedIn newsletter",
+      "lens": "range",
+      "status": "exploring",
+      "parents": [
+        "n12",
+        "n11"
+      ],
+      "summary": "The user's distribution channel of choice: their LinkedIn newsletter, one edition a week from 19 Oct (article 1 today). Kit in docs/linkedin-kit.md: calendar, edition 1 title/subtitle/cover/closing block, companion posts EN/FR, tagging rule, brief for the session that reads the user's LinkedIn to write the anecdote in their voice, edits for the newsletter editor. Articles live in the Claude doc \"Ambiflex launch articles\".",
+      "estimate": "1d/2d/4d",
+      "judge": "Edition 1 published 19 Oct; subscribers and reactions per edition recorded in docs/adoption.md",
+      "createdAt": "2026-10-19T01:00:57.498Z",
+      "updatedAt": "2026-10-19T01:00:57.498Z",
+      "startedAt": "2026-10-19T01:00:57.498Z"
+    },
+    {
+      "title": "awesome-ai-plugins",
+      "lens": "step",
+      "status": "done",
+      "parents": [
+        "n12"
+      ],
+      "summary": "PR #899 merged on 20 Oct: Ambiflex is listed in awesome-ai-plugins and in the HOL plugin registry. Claiming the listing (owner-verified badge) is the user's step.",
+      "estimate": "1h/2h/1d",
+      "judge": "HOL source scan score ≥ 80 and the PR's checks green",
+      "id": "n23",
+      "createdAt": "2026-10-20T12:44:22.433Z",
+      "updatedAt": "2026-10-21T10:02:00.187Z",
+      "startedAt": "2026-10-20T12:44:22.433Z",
+      "verification": "hashgraph-online/awesome-ai-plugins PR #899 merged; bot comment confirms the HOL registry listing",
+      "finishedAt": "2026-10-21T10:02:00.187Z"
+    },
+    {
+      "title": "Live page v0.4-0.6",
+      "lens": "step",
+      "status": "done",
+      "parents": [
+        "n13"
+      ],
+      "summary": "Interactive page shipped with the plugin (0.4), live activity and subagent forks (0.5), Linear-style look and Git lane graph (0.6), squash links, Present mode, legend, Working now strip (0.6.1-0.6.5). Releases on GitHub with a changelog; what's-new toast after updates.",
+      "verification": "38/38 plugin tests, claude plugin validate passes, headless renders; releases v0.5.0-v0.6.5 on ImadeBenToumAI/ambiflex",
+      "id": "n24",
+      "createdAt": "2026-10-21T10:02:02.645Z",
+      "updatedAt": "2026-10-21T10:02:02.645Z",
+      "startedAt": "2026-10-21T10:02:02.645Z",
+      "finishedAt": "2026-10-21T10:02:02.645Z"
+    }
+  ],
+  "auto": {
+    "on": false,
+    "turns": 20,
+    "maxTurns": 40,
+    "startedAt": "2026-10-18T21:55:08.518Z"
+  },
+  "cost": {
+    "spentUsd": 90.22,
+    "sessionUsd": 90.22,
+    "ratePerHour": 30.87,
+    "assumedRate": false,
+    "estimateUsd": 266.75,
+    "model": "claude-fable-5-1",
+    "rateLimits": [
+      {
+        "kind": "five_hour",
+        "percentUsed": 3,
+        "resetsAt": "2026-10-19T01:20:00.000Z"
+      },
+      {
+        "kind": "seven_day",
+        "percentUsed": 16,
+        "resetsAt": "2026-10-22T21:00:00.000Z"
+      }
+    ]
+  }
+}
