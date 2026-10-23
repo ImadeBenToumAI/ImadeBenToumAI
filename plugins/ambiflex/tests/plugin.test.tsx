@@ -417,17 +417,25 @@ test('the anonymous install count fires once per machine, never in the cloud or 
   on('session.start', async (_$: any, e: any) => ({ cwd: e.cwd }) as never)
   const boot = async () => { await $.session.start({ source: 'startup', cwd: '/p' } as never); await flush(); await flush() }
   await boot()
-  expect(hits.length).toBe(1)
-  expect(hits[0]).toContain('/releases/download/install-ping/')
+  // The install, then this week's actives: one download each.
+  expect(hits.length).toBe(2)
+  expect(hits[0]).toContain('/releases/download/install-ping/installed.txt')
+  expect(hits[1]).toMatch(/\/install-ping\/active-\d{4}-W\d{2}\.txt$/)
   expect(disk.has('/home/me/.claude/ambiflex-installed')).toBe(true)
+  expect(disk.get('/home/me/.claude/ambiflex-week')).toMatch(/^\d{4}-W\d{2}/)
   await boot()
-  expect(hits.length).toBe(1)
-  disk.delete('/home/me/.claude/ambiflex-installed')
+  expect(hits.length).toBe(2)
+  // A new week: only the weekly asset is fetched again.
+  disk.set('/home/me/.claude/ambiflex-week', '2000-W01\n')
+  await boot()
+  expect(hits.length).toBe(3)
+  expect(hits[2]).toContain('/active-')
+  disk.delete('/home/me/.claude/ambiflex-installed'); disk.delete('/home/me/.claude/ambiflex-week')
   envs.AMBIFLEX_NO_PING = '1'
   await boot()
   envs.AMBIFLEX_NO_PING = undefined; envs.CLAUDE_CODE_REMOTE = 'true'
   await boot()
-  expect(hits.length).toBe(1)
+  expect(hits.length).toBe(3)
 })
 
 
@@ -608,3 +616,4 @@ test('harness: no node starts before the plan is approved, without a check, or a
   await call('tree_upsert', { id: 'n2', title: 'Docs', lens: 'step' })
   expect(await call('tree_upsert', { id: 'n2', status: 'exploring' })).toContain('n2 stored')
 })
+

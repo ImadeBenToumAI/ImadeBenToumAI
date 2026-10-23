@@ -3,6 +3,7 @@ import type { EngineInterface, Register, ResolveInput } from 'claude-code'
 
 import type { BranchInfo, Cost, GitCommit, LiveActivity, Status, Tab, Tree, TreeNode } from '../types'
 import { emptyLedger, estTokens, noteCall, noteCompact, noteRequest, overhead, overheadLine, type Ledger, type Overhead } from './overhead'
+import { PING_URL, isoWeek, weekUrl } from './ping'
 import { LOG_FILE, eventsFromSnapshot, parseLog, replay, serialize } from './log'
 import { PAGE_HTML } from './page'
 import { SERVER_PY, localShim, parseActions } from './local'
@@ -103,7 +104,7 @@ const PAGE_FILE = '.ambiflex/page.html'
 const LIVE = async ($: $) => `${await rootOf($)}.ambiflex/live.json`
 const SEEN = async ($: $) => `${await rootOf($)}.ambiflex/.seen-version`
 // Keep in step with .claude-plugin/plugin.json: shown once per project after an update.
-export const VERSION = '0.20.0'
+export const VERSION = '0.20.1'
 export const WHATS_NEW = '/ambiflex local: the page served from this machine reads the session state from disk every second (no claude.ai sync in between), and its buttons reach the session directly. Install it as an app from Chrome for a window of its own.'
 
 const tree = atom({ plugin: 'ambiflex', key: 'tree' } as const, emptyTree())
@@ -464,9 +465,8 @@ async function pushSkills($: $) {
   await pushDoc($, 'skills', doc as unknown as Record<string, unknown>, true)
 }
 
-// The install count: once per machine, one GET of an empty release asset. GitHub counts the download;
+// The install count: once per machine, one GET of an empty release asset; and weekly actives, once per machine per week. GitHub counts the download;
 // nothing identifies the machine, the account or the project. Off with installPing: false or AMBIFLEX_NO_PING=1.
-export const PING_URL = 'https://github.com/ImadeBenToumAI/ambiflex/releases/download/install-ping/installed.txt'
 async function installPing($: $) {
   if (options.installPing === false) return
   const off = (v: string | undefined) => !!v
@@ -475,10 +475,19 @@ async function installPing($: $) {
   const home = await $.env.get('HOME').catch(() => undefined) ?? await $.env.get('USERPROFILE').catch(() => undefined)
   if (!home) return
   const marker = `${home}/.claude/ambiflex-installed`
-  if (await $.fs.exists(marker).catch(() => true)) return
-  const r = await $.http.fetch(PING_URL).catch(() => undefined)
-  if (r && r.status < 500) await $.fs.write(marker, `${VERSION}\n`).catch(() => undefined)
+  if (!(await $.fs.exists(marker).catch(() => true))) {
+    const r = await $.http.fetch(PING_URL).catch(() => undefined)
+    if (r && r.status < 500) await $.fs.write(marker, `${VERSION}\n`).catch(() => undefined)
+  }
+  // Weekly actives: once per machine per ISO week, one GET of that week's empty asset. Its download count is how
+  // many machines ran Ambiflex that week; the marker keeps the last week sent. A missing asset is retried next session.
+  const week = isoWeek(new Date(await $.clock.now().catch(() => Date.now())))
+  const weekMarker = `${home}/.claude/ambiflex-week`
+  if (((await $.fs.read(weekMarker).catch(() => '')) as string).trim() === week) return
+  const w = await $.http.fetch(weekUrl(week)).catch(() => undefined)
+  if (w && w.status >= 200 && w.status < 400) await $.fs.write(weekMarker, `${week}\n`).catch(() => undefined)
 }
+
 
 /** For every node that names a branch: its commits beyond main, and its PR when `gh` can tell. */
 async function refreshBranches($: $) {
